@@ -1,0 +1,10 @@
+TensorFlow>=2.10.0
+PyTorch>=1.11.0
+OpenCV>=4.5.0
+Numpy>=1.21.0
+Pandas>=1.3.0
+Matplotlib>=3.4.0
+scikit-learn>=1.0.0
+Pillow>=8.3.0
+jupyter>=1.0.0
+ipython>=7.30.0

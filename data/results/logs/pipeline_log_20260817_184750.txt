@@ -1,0 +1,62 @@
+2026-08-17 18:47:50,408 - __main__ - INFO - ============================================================
+2026-08-17 18:47:50,408 - __main__ - INFO - INDUS-KEELADI CNN TRAINING PIPELINE STARTED
+2026-08-17 18:47:50,408 - __main__ - INFO - ============================================================
+2026-08-17 18:47:50,506 - __main__ - INFO - Loading training data with augmentation...
+2026-08-17 18:47:50,507 - __main__ - INFO - Found 47 classes
+2026-08-17 18:47:50,512 - __main__ - INFO -   sign_01_P13_Man: 1 image(s)
+2026-08-17 18:47:50,527 - __main__ - INFO -   sign_02_P60: 1 image(s)
+2026-08-17 18:47:50,530 - __main__ - INFO -   sign_03_P72: 1 image(s)
+2026-08-17 18:47:50,532 - __main__ - INFO -   sign_04_P76: 1 image(s)
+2026-08-17 18:47:50,535 - __main__ - INFO -   sign_05_P88: 1 image(s)
+2026-08-17 18:47:50,537 - __main__ - INFO -   sign_06_P91: 1 image(s)
+2026-08-17 18:47:50,539 - __main__ - INFO -   sign_07_P107: 1 image(s)
+2026-08-17 18:47:50,541 - __main__ - INFO -   sign_08_P109: 1 image(s)
+2026-08-17 18:47:50,542 - __main__ - INFO -   sign_09_P127: 1 image(s)
+2026-08-17 18:47:50,545 - __main__ - INFO -   sign_10_P128: 1 image(s)
+2026-08-17 18:47:50,548 - __main__ - INFO -   sign_11_P129: 1 image(s)
+2026-08-17 18:47:50,549 - __main__ - INFO -   sign_12_P130: 1 image(s)
+2026-08-17 18:47:50,551 - __main__ - INFO -   sign_13_P130_variant: 1 image(s)
+2026-08-17 18:47:50,553 - __main__ - INFO -   sign_14_P133: 1 image(s)
+2026-08-17 18:47:50,555 - __main__ - INFO -   sign_15_P145: 1 image(s)
+2026-08-17 18:47:50,557 - __main__ - INFO -   sign_16_P147: 1 image(s)
+2026-08-17 18:47:50,558 - __main__ - INFO -   sign_17_P156_P165: 2 image(s)
+2026-08-17 18:47:50,561 - __main__ - INFO -   sign_18_P181_P187: 2 image(s)
+2026-08-17 18:47:50,563 - __main__ - INFO -   sign_19_P192: 1 image(s)
+2026-08-17 18:47:50,564 - __main__ - INFO -   sign_20_P198: 1 image(s)
+2026-08-17 18:47:50,567 - __main__ - INFO -   sign_21_P200_P209: 2 image(s)
+2026-08-17 18:47:50,570 - __main__ - INFO -   sign_22_P214: 1 image(s)
+2026-08-17 18:47:50,572 - __main__ - INFO -   sign_23_P217: 1 image(s)
+2026-08-17 18:47:50,574 - __main__ - INFO -   sign_24_P219: 1 image(s)
+2026-08-17 18:47:50,577 - __main__ - INFO -   sign_25_P225: 1 image(s)
+2026-08-17 18:47:50,578 - __main__ - INFO -   sign_26_P245_Cross: 1 image(s)
+2026-08-17 18:47:50,581 - __main__ - INFO -   sign_27_P266: 1 image(s)
+2026-08-17 18:47:50,583 - __main__ - INFO -   sign_28_P272_P371: 2 image(s)
+2026-08-17 18:47:50,585 - __main__ - INFO -   sign_29_P278: 1 image(s)
+2026-08-17 18:47:50,587 - __main__ - INFO -   sign_30_P282_P285_P287: 3 image(s)
+2026-08-17 18:47:50,591 - __main__ - INFO -   sign_31_P289: 1 image(s)
+2026-08-17 18:47:50,593 - __main__ - INFO -   sign_32_P296: 1 image(s)
+2026-08-17 18:47:50,594 - __main__ - INFO -   sign_33_P301: 0 image(s)
+2026-08-17 18:47:50,597 - __main__ - INFO -   sign_33_P302: 1 image(s)
+2026-08-17 18:47:50,601 - __main__ - INFO -   sign_34_P304: 0 image(s)
+2026-08-17 18:47:50,602 - __main__ - INFO -   sign_34_P319: 1 image(s)
+2026-08-17 18:47:50,606 - __main__ - INFO -   sign_35_P310: 0 image(s)
+2026-08-17 18:47:50,607 - __main__ - INFO -   sign_35_P341_diamond: 1 image(s)
+2026-08-17 18:47:50,610 - __main__ - INFO -   sign_36_P315: 0 image(s)
+2026-08-17 18:47:50,613 - __main__ - INFO -   sign_36_P341_oval: 1 image(s)
+2026-08-17 18:47:50,615 - __main__ - INFO -   sign_37_P318: 0 image(s)
+2026-08-17 18:47:50,616 - __main__ - INFO -   sign_37_P368_leaf: 1 image(s)
+2026-08-17 18:47:50,618 - __main__ - INFO -   sign_38_P323: 0 image(s)
+2026-08-17 18:47:50,621 - __main__ - INFO -   sign_38_P373: 1 image(s)
+2026-08-17 18:47:50,623 - __main__ - INFO -   sign_39_P325: 0 image(s)
+2026-08-17 18:47:50,624 - __main__ - INFO -   sign_39_P376: 1 image(s)
+2026-08-17 18:47:50,627 - __main__ - INFO -   sign_40_P120_SemiSigns: 0 image(s)
+2026-08-17 18:47:50,628 - __main__ - INFO - Total raw training samples: 45
+2026-08-17 18:48:06,455 - __main__ - INFO - Dataset augmented: 45 -> 1170 samples (25x factor)
+2026-08-17 18:48:06,503 - __main__ - INFO - Training set: 994 samples
+2026-08-17 18:48:06,503 - __main__ - INFO - Validation set: 176 samples
+2026-08-17 18:48:06,503 - __main__ - INFO - Train classes: 39, Val classes: 39
+2026-08-17 18:48:06,503 - __main__ - INFO - Building CNN model...
+2026-08-17 18:48:06,626 - tensorflow - WARNING - TensorFlow GPU support is not available on native Windows for TensorFlow >= 2.11. Even if CUDA/cuDNN are installed, GPU will not be used. Please use WSL2 or the TensorFlow-DirectML plugin.
+2026-08-17 18:48:06,628 - __main__ - INFO - Model built successfully
+2026-08-17 18:48:06,654 - __main__ - INFO - Beginning model training...
+2026-08-17 18:48:06,654 - __main__ - INFO - Starting training for 80 epochs (batch_size=16)...
