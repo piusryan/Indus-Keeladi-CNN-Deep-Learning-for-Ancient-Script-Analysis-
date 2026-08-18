@@ -43,7 +43,7 @@ class IndusKeeladiTrainer:
     Main training pipeline for Indus script classification
     """
     
-    def __init__(self, data_dir, model_dir, augment_factor=20):
+    def __init__(self, data_dir, model_dir, augment_factor=40):
         """
         Initialize trainer
         
@@ -63,14 +63,67 @@ class IndusKeeladiTrainer:
         self.data_augmentation = self._build_augmentation_pipeline()
     
     def _build_augmentation_pipeline(self):
-        """Build Keras data augmentation pipeline for small datasets"""
+        """
+        Domain-adaptation augmentation pipeline.
+
+        Goal: make synthetic-clean Indus glyphs look like messy Keeladi
+        graffiti. The accuracy gap was caused by the CNN only seeing
+        perfect matplotib shapes during training, then being fed noisy
+        white-bordered screenshots of potsherds at test time.
+
+        Harshness tuned so after 40x augs the model sees the full
+        spectrum: pristine → slightly rotated → sheared → dim →
+        speckled → slightly blurred → random-cropped (scaled).
+        """
         return keras.Sequential([
-            keras.layers.RandomRotation(0.15),
-            keras.layers.RandomZoom(0.1, 0.1),
-            keras.layers.RandomTranslation(0.1, 0.1),
-            keras.layers.RandomContrast(0.2),
-            keras.layers.GaussianNoise(0.05),
+            # 1. Bigger rotation + translation (graffiti scratched at any angle)
+            keras.layers.RandomRotation(0.28),          # was 0.15 -> ±~100°
+            keras.layers.RandomTranslation(0.18, 0.18),  # was 0.10
+            keras.layers.RandomZoom(0.22, 0.22),         # was 0.10
+
+            # 2. Shear / affine — potsherds are curved surfaces
+            keras.layers.RandomFlip("horizontal"),       # script direction unknown
+
+            # 3. Intensity shifts — scans/screenshots have varying brightness
+            keras.layers.RandomContrast(0.45),           # was 0.20
+            keras.layers.RandomBrightness(0.35, value_range=(0.0, 1.0)),
+
+            # 4. Noise — photo compression, scan dust, JPG artifacts
+            keras.layers.GaussianNoise(0.09),            # was 0.05
+
+            # (Blur and salt-pepper are applied in NumPy below because
+            #  Keras doesn't ship built-in Poisson/S&P layers.)
         ])
+
+    def _numpy_stochastic_degrade(self, img: np.ndarray) -> np.ndarray:
+        """
+        Additional probability-based degradation applied per-augmented-image:
+          - 30% chance of gaussian blur (potsherd out-of-focus)
+          - 20% chance of salt & pepper noise (bad scan)
+          - 25% chance of slight posterize (reduced dynamic range — web screenshot)
+        Operates on H×W×C float32 image in [0, 1] range, returns same dtype.
+        """
+        import cv2
+        x = img.copy()
+        if np.random.rand() < 0.30:
+            k = np.random.choice([3, 5])
+            x = cv2.GaussianBlur(x, (k, k), sigmaX=0.5 + np.random.rand())
+        if np.random.rand() < 0.20:
+            # salt & pepper
+            s_vs_p = 0.5
+            amount = np.random.uniform(0.01, 0.08)
+            salt = np.random.choice([0, 1], size=x.shape[:2],
+                                    p=[1 - amount, amount]).astype(bool)
+            pepper = np.random.choice([0, 1], size=x.shape[:2],
+                                      p=[1 - amount * s_vs_p,
+                                         amount * s_vs_p]).astype(bool)
+            x[salt] = 1.0
+            x[pepper] = 0.0
+        if np.random.rand() < 0.25:
+            # Slight posterize / quantize levels
+            levels = np.random.choice([16, 32, 64])
+            x = np.clip(np.round(x * levels) / levels, 0.0, 1.0)
+        return np.clip(x, 0.0, 1.0).astype(np.float32)
     
     def _augment_dataset(self, X, y):
         """
@@ -96,6 +149,7 @@ class IndusKeeladiTrainer:
             img = np.expand_dims(X[i], axis=0)
             for j in range(self.augment_factor):
                 aug_img = self.data_augmentation(img, training=True)[0].numpy()
+                aug_img = self._numpy_stochastic_degrade(aug_img)
                 augmented_X.append(aug_img)
                 augmented_y.append(y[i])
         

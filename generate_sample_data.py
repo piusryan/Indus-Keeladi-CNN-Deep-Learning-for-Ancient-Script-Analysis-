@@ -48,7 +48,8 @@ def create_sample_dataset():
     """Create sample dataset for demonstration"""
     project_root = Path(__file__).parent
     data_dir = project_root / "data" / "processed" / "train" / "primary_core_signs"
-    val_dir = project_root / "data" / "processed" / "val_keeladi"
+    val_dir = project_root / "data" / "processed" / "val" / "keeladi"
+    tb_dir = project_root / "data" / "processed" / "val" / "tamil_brahmi"
     
     sign_types = ["cross", "circle", "lines", "triangle", "square"]
     

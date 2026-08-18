@@ -83,7 +83,8 @@ class KeeladiEvaluator:
             Dictionary of match folders with their images and file paths
         """
         self.logger.info("Loading Keeladi validation datasets...")
-        val_dir = self.data_dir / "processed" / "val_keeladi"
+        val_dir = self.data_dir / "processed" / "val" / "keeladi"
+        tb_dir = self.data_dir / "processed" / "val" / "tamil_brahmi"
         
         validation_data = {}
         validation_files = {}
@@ -137,7 +138,7 @@ class KeeladiEvaluator:
                 self.logger.info(f"  general_keeladi_graffiti: {len(images)} image(s)")
         
         # Load Tamil-Brahmi inscriptions if available
-        tamil_brahmi_dir = val_dir / "keeladi_tamil_brahmi"
+        tamil_brahmi_dir = tb_dir
         if tamil_brahmi_dir.exists():
             for subfolder in tamil_brahmi_dir.iterdir():
                 if subfolder.is_dir():
@@ -355,6 +356,14 @@ class KeeladiEvaluator:
         # Visualizations
         self._plot_match_statistics(analysis, output_path)
         self._plot_confidence_distribution(predictions, output_path)
+
+        # ── Graffiti gallery + side-by-side comparisons ──────────────────
+        self.logger.info("Generating Keeladi graffiti gallery visualizations...")
+        self._plot_graffiti_gallery(
+            predictions,
+            output_path,
+            folder_filter=['general_keeladi_graffiti', 'match_Indus_*', 'tamil_brahmi_*']
+        )
     
     def _plot_match_statistics(self, analysis, output_dir):
         """Create visualization of match statistics"""
@@ -465,6 +474,230 @@ class KeeladiEvaluator:
         except Exception as e:
             self.logger.error(f"Error plotting confidence distribution: {e}")
 
+    def _plot_graffiti_gallery(self, predictions, output_dir, folder_filter=None, max_per_page=12):
+        """
+        Generate per-image gallery PNGs for Keeladi graffiti.
+        Each subplot shows the graffiti image + Top-3 Indus sign predictions with probabilities.
+
+        Args:
+            predictions: Dictionary from predict_keeladi_matches()
+            output_dir: Directory for gallery PNGs
+            folder_filter: Optional list of folder keys to include (e.g. ['general_keeladi_graffiti', 'tamil_brahmi_*'])
+            max_per_page: Max sherds per PNG page
+        """
+        try:
+            import cv2
+            import math
+
+            validation_files = getattr(self, 'validation_files', {})
+            all_graffiti_folders = []
+            for folder_name in predictions.keys():
+                if folder_filter is None:
+                    all_graffiti_folders.append(folder_name)
+                else:
+                    matched = False
+                    for pat in folder_filter:
+                        if (pat.endswith('*') and folder_name.startswith(pat[:-1])) or folder_name == pat:
+                            matched = True
+                            break
+                    if matched:
+                        all_graffiti_folders.append(folder_name)
+
+            train_sign_dir = self.data_dir / "processed" / "train" / "primary_core_signs"
+
+            for folder_name in all_graffiti_folders:
+                pred_data = predictions[folder_name]
+                files_in_folder = validation_files.get(folder_name, [])
+                n = len(pred_data['all_predictions'])
+                if n == 0:
+                    continue
+
+                files_folder = None
+                if folder_name.startswith('tamil_brahmi_'):
+                    sub_key = folder_name[len('tamil_brahmi_'):]
+                    files_folder = self.data_dir / "processed" / "val" / "tamil_brahmi" / sub_key
+                elif folder_name.startswith('match_Indus_') or folder_name == 'general_keeladi_graffiti':
+                    files_folder = self.data_dir / "processed" / "val" / "keeladi" / folder_name
+
+                num_pages = math.ceil(n / max_per_page)
+
+                for page in range(num_pages):
+                    start = page * max_per_page
+                    end = min(start + max_per_page, n)
+                    count = end - start
+                    cols = 3
+                    rows = math.ceil(count / cols)
+                    fig_w = 16
+                    fig_h = rows * 5.2
+                    fig, axes = plt.subplots(rows, cols, figsize=(fig_w, fig_h), squeeze=False)
+                    fig.suptitle(f'Keeladi Graffiti Gallery — {folder_name} (Page {page+1}/{num_pages})',
+                                 fontsize=15, fontweight='bold', color='#2c3e50')
+
+                    flat_axes = axes.flatten()
+                    for idx_in_page, i in enumerate(range(start, end)):
+                        ax = flat_axes[idx_in_page]
+                        fname = files_in_folder[i] if i < len(files_in_folder) else f'img_{i}.png'
+                        img_path = files_folder / fname if files_folder else None
+
+                        graffiti_img = None
+                        if img_path and img_path.exists():
+                            try:
+                                img_bgr = cv2.imread(str(img_path))
+                                if img_bgr is not None:
+                                    graffiti_img = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+                            except Exception:
+                                graffiti_img = None
+
+                        if graffiti_img is not None:
+                            ax.imshow(graffiti_img)
+                        else:
+                            ax.text(0.5, 0.5, f'(image not found)\n{fname}', ha='center', va='center', fontsize=8)
+                            ax.set_xlim(0, 1); ax.set_ylim(0, 1)
+
+                        ax.set_xticks([]); ax.set_yticks([])
+
+                        top3_names = pred_data['top3_class_names'][i]
+                        top3_probs = pred_data['top3_probs'][i]
+                        lines = []
+                        for rank, (name, prob) in enumerate(zip(top3_names, top3_probs), 1):
+                            pct = f'{prob:.1%}'
+                            bar = '\u2588' * int(prob * 25)
+                            lines.append(f'#{rank} {name[:30]}  {pct}  {bar}')
+                        ax.set_title('\n'.join(lines), fontsize=7.5, loc='center',
+                                     backgroundcolor='#f8f9fa', pad=6, family='monospace',
+                                     color='#212529')
+
+                    for j in range(idx_in_page + 1, len(flat_axes)):
+                        flat_axes[j].axis('off')
+
+                    fig.text(0.5, 0.01, f'Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}  |  '
+                                        f'CNN trained on {len(self.class_names)} Indus Core Signs  |  '
+                                        f'Page {page+1}/{num_pages}',
+                             ha='center', fontsize=8, color='#6c757d', style='italic')
+                    plt.tight_layout(rect=[0, 0.04, 1, 0.96])
+
+                    safe_folder = folder_name.replace('/', '_').replace('\\', '_')
+                    gallery_path = output_dir / f"graffiti_gallery_{safe_folder}_page{page+1:02d}.png"
+                    plt.savefig(gallery_path, dpi=140, bbox_inches='tight', facecolor='white')
+                    self.logger.info(f"Gallery page saved to {gallery_path}")
+                    plt.close()
+
+                self._save_single_sherd_comparisons(folder_name, predictions, output_dir, train_sign_dir)
+
+        except Exception as e:
+            self.logger.error(f"Error generating graffiti gallery: {e}", exc_info=True)
+
+    def _save_single_sherd_comparisons(self, folder_name, predictions, output_dir, train_sign_dir):
+        """
+        For each graffiti sherd, save a side-by-side comparison PNG:
+        Left column = graffiti image, Right column = Top-3 predicted Indus signs images.
+        """
+        try:
+            import cv2
+            import math
+
+            validation_files = getattr(self, 'validation_files', {})
+            pred_data = predictions[folder_name]
+            files_in_folder = validation_files.get(folder_name, [])
+            n = len(pred_data['all_predictions'])
+            if n == 0:
+                return
+
+            files_folder = None
+            if folder_name.startswith('tamil_brahmi_'):
+                sub_key = folder_name[len('tamil_brahmi_'):]
+                files_folder = self.data_dir / "processed" / "val" / "tamil_brahmi" / sub_key
+            elif folder_name.startswith('match_Indus_') or folder_name == 'general_keeladi_graffiti':
+                files_folder = self.data_dir / "processed" / "val" / "keeladi" / folder_name
+
+            sign_folder_lookup = {}
+            if train_sign_dir.exists():
+                for d in train_sign_dir.iterdir():
+                    if d.is_dir():
+                        sign_folder_lookup[d.name] = d
+
+            max_rows = min(n, 10)
+            total_pages = math.ceil(n / max_rows)
+            for page in range(total_pages):
+                start = page * max_rows
+                end = min(start + max_rows, n)
+                page_count = end - start
+                fig, axes = plt.subplots(page_count, 2, figsize=(10, page_count * 2.7), squeeze=False)
+                fig.suptitle(f'Graffiti ↔ Indus Sign Comparison — {folder_name} (Page {page+1}/{total_pages})',
+                             fontsize=14, fontweight='bold', color='#1a237e')
+
+                for local_i, i in enumerate(range(start, end)):
+                    fname = files_in_folder[i] if i < len(files_in_folder) else f'img_{i}.png'
+                    img_path = files_folder / fname if files_folder else None
+
+                    # Left: Graffiti
+                    ax_left = axes[local_i, 0]
+                    graffiti_img = None
+                    if img_path and img_path.exists():
+                        try:
+                            img_bgr = cv2.imread(str(img_path))
+                            if img_bgr is not None:
+                                graffiti_img = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+                        except Exception:
+                            graffiti_img = None
+                    if graffiti_img is not None:
+                        ax_left.imshow(graffiti_img)
+                        ax_left.set_title(f'Keeladi Graffiti\n{fname[:45]}', fontsize=9, pad=4)
+                    else:
+                        ax_left.text(0.5, 0.5, f'{fname}', ha='center', va='center', fontsize=8)
+                        ax_left.set_xlim(0, 1); ax_left.set_ylim(0, 1)
+                    ax_left.set_xticks([]); ax_left.set_yticks([])
+
+                    # Right: Indus Top-3 montage (horizontal strip)
+                    ax_right = axes[local_i, 1]
+                    ax_right.set_xticks([]); ax_right.set_yticks([])
+                    top3_names = pred_data['top3_class_names'][i]
+                    top3_probs = pred_data['top3_probs'][i]
+
+                    strip_axes = []
+                    for rank in range(3):
+                        sub = ax_right.inset_axes([rank * 0.33 + 0.01, 0.20, 0.31, 0.70])
+                        strip_axes.append(sub)
+
+                    for rank, (sub, name, prob) in enumerate(zip(strip_axes, top3_names, top3_probs)):
+                        sign_path = None
+                        if name in sign_folder_lookup:
+                            imgs = sorted(sign_folder_lookup[name].glob("*.png")) + \
+                                   sorted(sign_folder_lookup[name].glob("*.jpg"))
+                            if imgs:
+                                sign_path = imgs[0]
+                        sign_img = None
+                        if sign_path and sign_path.exists():
+                            try:
+                                sb = cv2.imread(str(sign_path))
+                                if sb is not None:
+                                    sign_img = cv2.cvtColor(sb, cv2.COLOR_BGR2RGB)
+                            except Exception:
+                                sign_img = None
+                        if sign_img is not None:
+                            sub.imshow(sign_img)
+                        else:
+                            sub.text(0.5, 0.5, name[:18], ha='center', va='center', fontsize=7, wrap=True)
+                            sub.set_xlim(0, 1); sub.set_ylim(0, 1)
+                        sub.set_xticks([]); sub.set_yticks([])
+                        sub.set_title(f'#{rank+1}  {prob:.0%}\n{name[:22]}',
+                                      fontsize=7.5, pad=2,
+                                      backgroundcolor=['#d4efdf', '#fff3cd', '#f8d7da'][rank], wrap=True)
+
+                fig.text(0.5, 0.01, f'Keeladi Graffiti compared against {len(self.class_names)} Indus signs | '
+                                   f'Page {page+1}/{total_pages}',
+                         ha='center', fontsize=8, color='#6c757d')
+                plt.tight_layout(rect=[0, 0.035, 1, 0.95])
+
+                safe_folder = folder_name.replace('/', '_').replace('\\', '_')
+                comp_path = output_dir / f"graffiti_vs_indus_{safe_folder}_page{page+1:02d}.png"
+                plt.savefig(comp_path, dpi=140, bbox_inches='tight', facecolor='white')
+                self.logger.info(f"Comparison page saved to {comp_path}")
+                plt.close()
+
+        except Exception as e:
+            self.logger.error(f"Error saving single sherd comparisons: {e}", exc_info=True)
+
 
 def main():
     """Main evaluation pipeline"""
@@ -497,7 +730,7 @@ def main():
         validation_data = evaluator.load_keeladi_validation_set()
         
         if not validation_data:
-            logger.error("No validation images found. Check val_keeladi directories.")
+            logger.error("No validation images found. Check val/keeladi and val/tamil_brahmi directories.")
             sys.exit(1)
         
         # Predict matches - use 0.5 threshold for research discovery
