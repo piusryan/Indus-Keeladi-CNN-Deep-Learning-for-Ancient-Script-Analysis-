@@ -105,6 +105,8 @@ class IndusKeeladiTrainer:
         """
         import cv2
         x = img.copy()
+        if x.ndim == 2:  # cv2 ops may drop the singleton channel dim
+            x = x[..., np.newaxis]
         if np.random.rand() < 0.30:
             k = np.random.choice([3, 5])
             x = cv2.GaussianBlur(x, (k, k), sigmaX=0.5 + np.random.rand())
@@ -150,6 +152,9 @@ class IndusKeeladiTrainer:
             for j in range(self.augment_factor):
                 aug_img = self.data_augmentation(img, training=True)[0].numpy()
                 aug_img = self._numpy_stochastic_degrade(aug_img)
+                # Keras 3 randomly drops the singleton channel dim;
+                # restore it so all samples share the (64, 64, 1) shape
+                aug_img = aug_img.reshape(64, 64, 1)
                 augmented_X.append(aug_img)
                 augmented_y.append(y[i])
         
