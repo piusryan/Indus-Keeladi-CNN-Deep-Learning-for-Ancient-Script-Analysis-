@@ -8,12 +8,22 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import re
+import ast
+import json
 from pathlib import Path
 from collections import defaultdict
-import json
 
 
 EVAL_DIR = Path(__file__).parent / "models" / "evaluation_results"
+DECODED_DIR = EVAL_DIR / "decoded"
+DATA_DIR = Path(__file__).parent / "data"
+LOGS_DIR = DATA_DIR / "results" / "logs"
+INDUS_MATCHED_DIR = DATA_DIR / "processed" / "train" / "indus_matched"
+VAL_KEELADI_DIR = DATA_DIR / "processed" / "val" / "keeladi"
+TRAIN_CORE_DIR = DATA_DIR / "processed" / "train" / "primary_core_signs"
+BRAHMI_LETTERS_DIR = DATA_DIR / "processed" / "val" / "tamil_brahmi" / "general_brahmi_letters"
+ATAN_DIR = DATA_DIR / "processed" / "val" / "tamil_brahmi" / "inscriptions_kuviran_atan"
+IMG_EXTS = {'.png', '.jpg', '.jpeg', '.bmp'}
 
 
 def load_training_summary():
@@ -70,7 +80,9 @@ def scan_evaluation_results(eval_dir: Path):
             result["report_txt"] = f
         elif f.suffix.lower() in ('.png', '.jpg', '.jpeg'):
             result["all_pngs"].append(f)
-            if name_lower.startswith("graffiti_gallery_"):
+            if name_lower == "known_pair_comparison.png":
+                pass  # has its own dedicated section (4b), not "other"
+            elif name_lower.startswith("graffiti_gallery_"):
                 result["gallery_pngs"].append(f)
             elif name_lower.startswith("graffiti_vs_indus_"):
                 result["comparison_pngs"].append(f)
@@ -142,6 +154,88 @@ def parse_report_metrics(report_txt_path: Path):
     return metrics
 
 
+def load_lexicon():
+    """Load data/lexicon.json (symbol meanings / transliterations)."""
+    p = DATA_DIR / "lexicon.json"
+    if not p.exists():
+        return {}
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def find_class_image(class_name):
+    """First reference image of a class across both training trees."""
+    for tree in (TRAIN_CORE_DIR, INDUS_MATCHED_DIR):
+        d = tree / class_name
+        if d.exists():
+            imgs = sorted([p for p in d.iterdir() if p.suffix.lower() in IMG_EXTS])
+            if imgs:
+                return imgs[0]
+    return None
+
+
+def parse_decoded_readings():
+    """Parse decoded_readings.txt into structured Atan + graffiti blocks."""
+    path = DECODED_DIR / "decoded_readings.txt"
+    atans, graffitis = [], []
+    if not path.exists():
+        return atans, graffitis
+    section, current = None, None
+    for raw in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = raw.rstrip()
+        if "--- Atan potsherds" in line:
+            section, current = "atan", None
+            continue
+        if "--- Keeladi graffiti" in line:
+            section, current = "graffiti", None
+            continue
+        if not line.strip():
+            continue
+        if section == "atan":
+            if not line.startswith(" "):
+                name, _, note = line.partition(" [")
+                current = {"name": name.strip(), "note": note.rstrip("]"),
+                           "letters": [], "brahmi": "", "indus": ""}
+                atans.append(current)
+            elif current is not None:
+                s = line.strip()
+                if s.startswith("Brahmi reading:"):
+                    current["brahmi"] = s.split(":", 1)[1].strip()
+                elif s.startswith("Indus reading:"):
+                    current["indus"] = s.split(":", 1)[1].strip()
+                else:
+                    current["letters"].append(s)
+        elif section == "graffiti":
+            if line.endswith(":") and not line.startswith(" "):
+                current = {"name": line[:-1].strip(), "lines": []}
+                graffitis.append(current)
+            elif current is not None and line.strip():
+                current["lines"].append(line.strip())
+    return atans, graffitis
+
+
+def parse_latest_top3():
+    """fname -> [(class, prob), ...] from the newest log containing Top-3 lines."""
+    if not LOGS_DIR.exists():
+        return {}
+    logs = sorted(LOGS_DIR.glob("*_log_*.txt"),
+                  key=lambda p: p.stat().st_mtime, reverse=True)
+    for log in logs:
+        verdicts = {}
+        for line in log.read_text(encoding="utf-8", errors="ignore").splitlines():
+            m = re.search(r"\[([^\]]+)\] Top-3: (\[.*\])\s*$", line)
+            if m:
+                try:
+                    verdicts[m.group(1)] = ast.literal_eval(m.group(2))
+                except Exception:
+                    pass
+        if verdicts:
+            return verdicts
+    return {}
+
+
 def render_section_grid(images, cols=2, width_label=True):
     """Render a list of image paths in a Streamlit column grid"""
     if not images:
@@ -186,6 +280,172 @@ def render_grouped_section(title, icon, grouped_paths, description, cols=1):
                     key=f"sel-{group_key}",
                 )
                 st.image(str(pages[pg - 1]), caption=pages[pg - 1].name, use_container_width=True)
+
+
+def render_known_pairs(lexicon, verdicts):
+    """Side-by-side: curated Indus reference vs Keeladi match-folder candidate."""
+    st.markdown("---")
+    st.header("🎯 Known-Pair Verification — Indus Reference ↔ Keeladi Match")
+    st.caption(
+        "Left = your curated Indus sign reference (`data/processed/train/indus_matched`), "
+        "right = the Keeladi potsherd candidate (`val/keeladi/match_Indus_*`). "
+        "Descriptions auto-generated from the lexicon + the latest model verdict."
+    )
+    if not INDUS_MATCHED_DIR.exists():
+        st.info("No `indus_matched` reference folder found yet.")
+        return
+    cmp_png = EVAL_DIR / "known_pair_comparison.png"
+    scores_json = EVAL_DIR / "known_pair_scores.json"
+    scores = {}
+    if scores_json.exists():
+        try:
+            for row in json.loads(scores_json.read_text(encoding="utf-8")):
+                scores.setdefault(row["class"], []).append(row)
+        except Exception:
+            pass
+    if cmp_png.exists():
+        st.image(str(cmp_png),
+                 caption="Keeladi graffiti ↔ INDUS sign — notebook-style "
+                         "comparison with auto-computed shape match %",
+                 width=560)
+    indus_signs = lexicon.get("indus_signs", {})
+    pairs = []
+    for sub in sorted(INDUS_MATCHED_DIR.iterdir()):
+        if sub.is_dir():
+            m = re.search(r"P(\d+)", sub.name)
+            if m:
+                pairs.append((m.group(1), sub))
+    if not pairs:
+        st.info("No per-sign reference subfolders under `indus_matched` yet.")
+        return
+    for num, ref_dir in pairs:
+        ref_imgs = sorted([p for p in ref_dir.iterdir() if p.suffix.lower() in IMG_EXTS])
+        val_dir = VAL_KEELADI_DIR / f"match_Indus_{num}"
+        val_imgs = sorted([p for p in val_dir.iterdir() if p.suffix.lower() in IMG_EXTS]) \
+            if val_dir.exists() else []
+        meaning = indus_signs.get(ref_dir.name, {}).get("meaning", "no lexicon entry yet")
+        with st.expander(
+                f"🔗 Sign P{num} · {ref_dir.name} · {len(ref_imgs)} reference / {len(val_imgs)} Keeladi",
+                expanded=False):
+            st.markdown(f"**Lexicon:** {meaning}")
+            for row in scores.get(ref_dir.name, []):
+                st.caption(
+                    f"Shape match **{row['match_pct']:.0f}%** — "
+                    f"{row['indus']} ↔ best Keeladi candidate {row['keeladi']}")
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("**Indus reference (train/indus_matched)**")
+                for img in ref_imgs:
+                    st.image(str(img), caption=img.name, use_container_width=True)
+            with c2:
+                st.markdown("**Keeladi candidate (val match folder)**")
+                if not val_imgs:
+                    st.warning("match folder missing/empty")
+                for img in val_imgs:
+                    v = verdicts.get(img.name)
+                    cap = img.name
+                    if v:
+                        top_cls, top_p = v[0][0], float(v[0][1])
+                        cap += f"  ·  model top-1: {top_cls} ({top_p:.2f})"
+                    st.image(str(img), caption=cap, use_container_width=True)
+                    if v:
+                        ok = v[0][0] == ref_dir.name
+                        desc = (f"Auto-description: Keeladi '{img.name}' vs reference P{num}. "
+                                f"Model top-1 = {v[0][0]} ({v[0][1]}); expected class {ref_dir.name}. ")
+                        desc += ("✅ expected sign is top-1." if ok else
+                                 "⚠️ expected sign not top-1 yet — full top-3: " +
+                                 ", ".join(f"{c} ({p})" for c, p in v) + ".")
+                        st.caption(desc)
+                    else:
+                        st.caption("No model verdict in latest log yet — run the pipeline.")
+
+
+def render_decoded_section():
+    """Annotated decoded inscriptions + graffiti parallel reads."""
+    st.markdown("---")
+    st.header("🔓 Decoded Inscriptions — Annotated Parallel Reads (Brahmi ∥ Indus)")
+    atans, graffitis = parse_decoded_readings()
+    if not atans and not graffitis:
+        st.info("No decoded readings yet — run the pipeline.")
+        return
+    st.caption(
+        "Each potsherd pairs its annotated segmentation image (red boxes, B:/I: labels) with the "
+        "letter-by-letter parallel read. B: = Tamil-Brahmi (real readings), "
+        "I: = Indus (project lexicon meanings). Multi-letter potsherds also "
+        "carry an NLP DECODE block (composed word + name/corpus reading + Indus gloss). "
+        "Descriptions auto-generated from the decoding output."
+    )
+    for a in atans:
+        ann_png = DECODED_DIR / f"{Path(a['name']).stem}_annotated.png"
+        src_png = ATAN_DIR / a["name"]
+        with st.expander(
+                f"🏺 {a['name']} · {len(a['letters'])} letter(s) · Brahmi: {a['brahmi'] or '—'}",
+                expanded=False):
+            c1, c2 = st.columns(2)
+            with c1:
+                if ann_png.exists():
+                    st.image(str(ann_png), caption=f"annotated: {ann_png.name}",
+                             use_container_width=True)
+                elif src_png.exists():
+                    st.image(str(src_png), caption=f"source: {a['name']}",
+                             use_container_width=True)
+            with c2:
+                if a["note"]:
+                    st.caption(f"[{a['note']}]")
+                for L in a["letters"]:
+                    if L.startswith("NLP DECODE"):
+                        st.markdown(f"**{L}**")
+                    else:
+                        st.text(L)
+                st.markdown(f"**Brahmi reading:** {a['brahmi'] or '—'}  \n"
+                            f"**Indus reading:** {a['indus'] or '—'}")
+    if graffitis:
+        st.subheader("Keeladi graffiti & match candidates — parallel reads")
+        grid = st.columns(2)
+        for idx, g in enumerate(graffitis):
+            with grid[idx % 2]:
+                src = VAL_KEELADI_DIR / g["name"]
+                if src.exists():
+                    st.image(str(src), caption=g["name"], use_container_width=True)
+                else:
+                    st.markdown(f"**{g['name']}**")
+                for L in g["lines"]:
+                    st.text(L)
+
+
+def render_lexicon_browser(lexicon):
+    """Browse lexicon.json with reference figures and meanings."""
+    st.markdown("---")
+    st.header("📖 Symbol Lexicon Browser (data/lexicon.json)")
+    if not lexicon:
+        st.info("lexicon.json not found.")
+        return
+    meta = lexicon.get("_meta", {})
+    note = meta.get("note", meta) if isinstance(meta, dict) else meta
+    if note:
+        st.caption(str(note))
+    tab1, tab2 = st.tabs(["Indus signs (adopted meanings)", "Tamil-Brahmi letters (real readings)"])
+    with tab1:
+        signs = lexicon.get("indus_signs", {})
+        cols = st.columns(4)
+        for i, (name, info) in enumerate(signs.items()):
+            with cols[i % 4]:
+                img = find_class_image(name)
+                if img:
+                    st.image(str(img), use_container_width=True)
+                st.markdown(f"**{name}**")
+                st.caption(info.get("meaning", ""))
+    with tab2:
+        letters = lexicon.get("tamil_brahmi_letters", {})
+        cols = st.columns(6)
+        for i, (name, info) in enumerate(letters.items()):
+            with cols[i % 6]:
+                ref = BRAHMI_LETTERS_DIR / info.get("reference_file", "")
+                if info.get("reference_file") and ref.exists():
+                    st.image(str(ref), use_container_width=True)
+                tr = info.get("transliteration") or "(unverified)"
+                st.markdown(f"**{name} · {tr}**")
+                st.caption(info.get("meaning", ""))
 
 
 def main():
@@ -300,6 +560,17 @@ def main():
         description="Left column = actual Keeladi/Brahmi photo · Right column = Top-3 predicted Indus sign IMAGES.",
         cols=1,
     )
+
+    # ── 4b. KNOWN-PAIR VERIFICATION (indus_matched ↔ match folders) ─────
+    lexicon = load_lexicon()
+    verdicts = parse_latest_top3()
+    render_known_pairs(lexicon, verdicts)
+
+    # ── 4c. DECODED INSCRIPTIONS (annotated) ────────────────────────────
+    render_decoded_section()
+
+    # ── 4d. LEXICON BROWSER ─────────────────────────────────────────────
+    render_lexicon_browser(lexicon)
 
     # ── 5. OTHER / MISC PNGs ────────────────────────────────────────────
     if scan["other_pngs"]:

@@ -1,98 +1,130 @@
 """
-Generate sample dataset images for demonstration
-Creates synthetic Indus script and Keeladi graffiti images
+Generate realistic augmented variants for demonstration
+Expands each 1-image class to ~20 images by applying controlled
+geometric/photometric transforms to the REAL glyph, instead of
+drawing random shapes. Keeps originals, adds aug_*.png files.
+Safe to re-run: skips if class already has >=20 images.
 """
 
-import numpy as np
 import cv2
+import numpy as np
 from pathlib import Path
 import random
+import shutil
+
+TARGET_PER_CLASS = 20
+RNG = np.random.default_rng(42)
+
+def augment_image(img: np.ndarray, seed: int) -> np.ndarray:
+    """Apply a single realistic augmentation to a grayscale image."""
+    h, w = img.shape[:2]
+    rng = np.random.default_rng(seed)
+    out = img.copy()
+
+    # Random rotation ±18 degrees + scale 0.85-1.15 + translation ±4px
+    angle = float(rng.uniform(-18, 18))
+    scale = float(rng.uniform(0.85, 1.15))
+    tx = float(rng.uniform(-4, 4))
+    ty = float(rng.uniform(-4, 4))
+    M = cv2.getRotationMatrix2D((w/2, h/2), angle, scale)
+    M[0, 2] += tx
+    M[1, 2] += ty
+    out = cv2.warpAffine(out, M, (w, h), flags=cv2.INTER_LINEAR,
+                         borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+
+    # Brightness/contrast jitter
+    alpha = float(rng.uniform(0.75, 1.25))  # contrast
+    beta = float(rng.uniform(-18, 18))     # brightness
+    out = cv2.convertScaleAbs(out, alpha=alpha, beta=beta)
+
+    # Stroke thickness: erode or dilate 30% chance
+    if rng.random() < 0.30:
+        k = int(rng.choice([2, 3]))
+        kern = np.ones((k, k), np.uint8)
+        if rng.random() < 0.5:
+            out = cv2.erode(out, kern, iterations=1)
+        else:
+            out = cv2.dilate(out, kern, iterations=1)
+
+    # Mild blur 25% chance
+    if rng.random() < 0.25:
+        k = int(rng.choice([3, 5]))
+        out = cv2.GaussianBlur(out, (k, k), 0)
+
+    # Salt & pepper 15% chance
+    if rng.random() < 0.15:
+        amt = float(rng.uniform(0.01, 0.04))
+        mask = rng.random((h, w)) < amt
+        out[mask] = 255 if rng.random() < 0.5 else 0
+
+    # Horizontal flip 10% (script direction unknown)
+    if rng.random() < 0.10:
+        out = cv2.flip(out, 1)
+
+    return out
 
 
-def generate_synthetic_sign(output_path, sign_type="basic"):
-    """Generate a synthetic sign image"""
-    img = np.zeros((64, 64), dtype=np.uint8)
-    
-    if sign_type == "cross":
-        # Cross shape
-        cv2.line(img, (20, 20), (44, 44), 255, 3)
-        cv2.line(img, (44, 20), (20, 44), 255, 3)
-    elif sign_type == "circle":
-        # Circle shape
-        cv2.circle(img, (32, 32), 15, 255, 2)
-    elif sign_type == "lines":
-        # Parallel lines
-        cv2.line(img, (15, 20), (15, 44), 255, 2)
-        cv2.line(img, (25, 20), (25, 44), 255, 2)
-        cv2.line(img, (35, 20), (35, 44), 255, 2)
-    elif sign_type == "triangle":
-        # Triangle
-        pts = np.array([[32, 15], [15, 45], [49, 45]], np.int32)
-        cv2.polylines(img, [pts], True, 255, 2)
-    elif sign_type == "square":
-        # Square
-        cv2.rectangle(img, (18, 18), (46, 46), 255, 2)
-    else:
-        # Random basic shape
-        shapes = ["cross", "circle", "lines", "triangle", "square"]
-        return generate_synthetic_sign(output_path, random.choice(shapes))
-    
-    # Add some noise for realism
-    noise = np.random.normal(0, 10, img.shape).astype(np.uint8)
-    img = cv2.add(img, noise)
-    
-    cv2.imwrite(str(output_path), img)
+def expand_folder(folder: Path, target: int = TARGET_PER_CLASS):
+    """Expand one class folder to `target` images by augmenting existing files."""
+    exts = {".png", ".jpg", ".jpeg", ".bmp"}
+    existing = [p for p in folder.iterdir() if p.suffix.lower() in exts and not p.name.startswith("aug_")]
+    if not existing:
+        return 0
+    current_total = len([p for p in folder.iterdir() if p.suffix.lower() in exts])
+    if current_total >= target:
+        print(f"  {folder.name}: {current_total} images (already >= {target}, skipping)")
+        return 0
+
+    needed = target - current_total
+    # Use first real image as source (or round-robin if multiple)
+    created = 0
+    for i in range(needed):
+        src = existing[i % len(existing)]
+        img = cv2.imread(str(src), cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            continue
+        # Resize to 64x64 if needed, keep as is otherwise
+        if img.shape[0] != 64 or img.shape[1] != 64:
+            img = cv2.resize(img, (64, 64), interpolation=cv2.INTER_AREA)
+        aug = augment_image(img, seed=1000 + i + hash(folder.name) % 10000)
+        out_path = folder / f"aug_{i:02d}.png"
+        # Avoid overwrite if re-running
+        if out_path.exists():
+            out_path = folder / f"aug_{i:02d}_{random.randint(100,999)}.png"
+        cv2.imwrite(str(out_path), aug)
+        created += 1
+    print(f"  {folder.name}: {current_total} -> {current_total+created} (+{created} augmented)")
+    return created
 
 
-def create_sample_dataset():
-    """Create sample dataset for demonstration"""
+def create_sample_dataset(target_per_class: int = TARGET_PER_CLASS):
+    """Expand all training class folders to target_per_class images."""
     project_root = Path(__file__).parent
-    data_dir = project_root / "data" / "processed" / "train" / "primary_core_signs"
-    val_dir = project_root / "data" / "processed" / "val" / "keeladi"
-    tb_dir = project_root / "data" / "processed" / "val" / "tamil_brahmi"
-    
-    sign_types = ["cross", "circle", "lines", "triangle", "square"]
-    
-    # Create training data for first 10 classes (for demo speed)
-    for i in range(1, 11):
-        class_name = f"sign_{i:02d}_P13_Man" if i == 1 else f"sign_{i:02d}_P{60+i*5}"
-        class_dir = data_dir / class_name
-        
-        if not class_dir.exists():
-            # Use existing folder names
-            existing_classes = sorted([d.name for d in data_dir.iterdir() if d.is_dir()])
-            if i <= len(existing_classes):
-                class_dir = data_dir / existing_classes[i-1]
-            else:
-                continue
-        
-        print(f"Creating samples for {class_dir.name}")
-        
-        # Create 5 sample images per class
-        for j in range(5):
-            sign_type = sign_types[i % len(sign_types)]
-            output_path = class_dir / f"sample_{j}.png"
-            generate_synthetic_sign(output_path, sign_type)
-    
-    # Create validation data
-    print("Creating validation data")
-    for match_folder in ["match_Indus_225", "match_Indus_307", "match_Indus_365", "match_Indus_318"]:
-        match_dir = val_dir / match_folder
-        if match_dir.exists():
-            for j in range(3):
-                sign_type = sign_types[random.randint(0, len(sign_types)-1)]
-                output_path = match_dir / f"keeladi_{j}.png"
-                generate_synthetic_sign(output_path, sign_type)
-    
-    # Create general Keeladi graffiti
-    general_dir = val_dir / "general_keeladi_graffiti"
-    if general_dir.exists():
-        for j in range(5):
-            sign_type = sign_types[random.randint(0, len(sign_types)-1)]
-            output_path = general_dir / f"graffiti_{j}.png"
-            generate_synthetic_sign(output_path, sign_type)
-    
-    print("Sample dataset creation complete!")
+    train_roots = [
+        project_root / "data" / "processed" / "train" / "primary_core_signs",
+        project_root / "data" / "processed" / "train" / "indus_matched",
+        # Also expand val match folders slightly so 1-image val isn't trivial
+        # (only up to 5 so evaluation still tests generalization)
+    ]
+    total_created = 0
+    for root in train_roots:
+        if not root.exists():
+            print(f"Missing: {root}")
+            continue
+        print(f"\nExpanding {root}:")
+        for sub in sorted(root.iterdir()):
+            if sub.is_dir():
+                total_created += expand_folder(sub, target=target_per_class)
+
+    # Optionally expand general graffiti a bit (keep small for testing invariance)
+    val_general = project_root / "data" / "processed" / "val" / "keeladi" / "general_keeladi_graffiti"
+    if val_general.exists():
+        # Don't expand val too much; just ensure at least 4 remain
+        pass
+
+    print(f"\nDone. Total augmented images created: {total_created}")
+    print(f"Each class now has ~{target_per_class} images (original + aug_*).")
+    print("Re-run training to use expanded dataset.")
 
 
 if __name__ == "__main__":

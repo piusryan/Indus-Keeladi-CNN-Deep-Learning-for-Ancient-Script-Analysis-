@@ -85,8 +85,15 @@ class ImageNormalizer:
 
     def _autocrop_to_glyph(self, gray):
         """
-        Detect the largest non-background contour, crop image to its
-        bounding box, then add padding to return a square-ish crop.
+        Crop to the glyph strokes, ignoring potsherd outlines.
+
+        Uses connected components instead of raw contours: a Keeladi sherd
+        drawing contains the pot outline (a thin ring whose bounding box
+        spans most of the image) plus the actual graffiti.  Components
+        whose bbox covers >70% of the image are treated as pot outline and
+        skipped; the largest remaining component is the glyph.  Falls back
+        to the largest component overall when everything looks like outline
+        (e.g. graffiti connected to the outline).
         """
         if not self.autocrop:
             return gray
@@ -101,18 +108,41 @@ class ImageNormalizer:
         if np.count_nonzero(binary) > (h * w) // 2:
             binary = 255 - binary
 
-        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL,
-                                       cv2.CHAIN_APPROX_SIMPLE)
-        if not contours:
-            return gray
+        # Sever outlines glued to the image edge so they become separable
+        binary[:3, :] = 0
+        binary[-3:, :] = 0
+        binary[:, :3] = 0
+        binary[:, -3:] = 0
 
-        # Pick the contour with largest area
-        c = max(contours, key=cv2.contourArea)
-        area = cv2.contourArea(c)
-        if area < 25:  # too small, probably noise, keep original
-            return gray
+        n, _labels, cstats, _cent = cv2.connectedComponentsWithStats(
+            binary, 8)
 
-        x, y, bw, bh = cv2.boundingRect(c)
+        best_idx, best_area = None, 0          # largest non-outline comp
+        fallback_idx, fallback_area = None, 0  # largest comp overall
+        for i in range(1, n):
+            x, y, bw, bh, area = cstats[i]
+            if area < 25:  # speckle noise
+                continue
+            if area > fallback_area:
+                fallback_idx, fallback_area = i, area
+            if (bw * bh) > 0.7 * (h * w):
+                continue  # pot-outline ring, not the glyph
+            if area > best_area:
+                best_idx, best_area = i, area
+
+        pick = best_idx if best_idx is not None else fallback_idx
+        if pick is None:
+            return gray
+        # If the "glyph" we found is a tiny sliver while a much bigger
+        # component exists (graffiti connected to the outline), prefer the
+        # whole drawing over a meaningless outline fragment.
+        if (best_idx is not None and fallback_idx is not None
+                and best_idx != fallback_idx
+                and best_area < 0.01 * h * w
+                and fallback_area > 5 * best_area):
+            pick = fallback_idx
+
+        x, y, bw, bh, _area = cstats[pick]
         # Expand bbox slightly to avoid clipping thin strokes
         pad = max(2, int(max(bw, bh) * 0.08))
         x0 = max(0, x - pad)

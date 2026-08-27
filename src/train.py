@@ -125,6 +125,17 @@ class IndusKeeladiTrainer:
             # Slight posterize / quantize levels
             levels = np.random.choice([16, 32, 64])
             x = np.clip(np.round(x * levels) / levels, 0.0, 1.0)
+        if np.random.rand() < 0.35:
+            # Stroke-thickness shift - reference drawings are thick-stroked,
+            # potsherd graffiti is thin-scratched, so erode/dilate the glyph
+            k = int(np.random.choice([2, 3]))
+            kern = np.ones((k, k), np.uint8)
+            u8 = np.clip(x[..., 0] * 255.0, 0, 255).astype(np.uint8)
+            if np.random.rand() < 0.5:
+                u8 = cv2.erode(u8, kern)
+            else:
+                u8 = cv2.dilate(u8, kern)
+            x[..., 0] = u8.astype(np.float32) / 255.0
         return np.clip(x, 0.0, 1.0).astype(np.float32)
     
     def _augment_dataset(self, X, y):
@@ -213,27 +224,43 @@ class IndusKeeladiTrainer:
         """
         logger = logging.getLogger(__name__)
         train_dir = self.data_dir / "processed" / "train" / "primary_core_signs"
-        
+
         if not train_dir.exists():
             raise FileNotFoundError(f"Training directory not found: {train_dir}")
-        
-        # Get class names from folder names
-        self.class_names = sorted([d.name for d in train_dir.iterdir() if d.is_dir()])
+
+        # Additional reference tree: user-curated Indus signs that have a known
+        # Keeladi match (indus_matched/).  Subfolders are merged BY CLASS NAME
+        # with primary_core_signs (e.g. sign_25_P225_Cross gains extra images).
+        extra_dirs = [train_dir]
+        matched_dir = self.data_dir / "processed" / "train" / "indus_matched"
+        if matched_dir.exists():
+            extra_dirs.append(matched_dir)
+
+        # Get class names from folder names (union across both trees)
+        class_set = []
+        for d in extra_dirs:
+            for sub in d.iterdir():
+                if sub.is_dir() and sub.name not in class_set:
+                    class_set.append(sub.name)
+        self.class_names = sorted(class_set)
         logger.info(f"Found {len(self.class_names)} classes")
-        
+
         images = []
         labels = []
         class_counts = []
-        
-        # Load images from each class folder
+
+        # Load images from each class folder (across all trees)
         for class_idx, class_name in enumerate(self.class_names):
-            class_dir = train_dir / class_name
-            image_files = (
-                list(class_dir.glob("*.png")) + 
-                list(class_dir.glob("*.jpg")) + 
-                list(class_dir.glob("*.jpeg")) +
-                list(class_dir.glob("*.bmp"))
-            )
+            image_files = []
+            for d in extra_dirs:
+                class_dir = d / class_name
+                if class_dir.exists():
+                    image_files += (
+                        list(class_dir.glob("*.png")) +
+                        list(class_dir.glob("*.jpg")) +
+                        list(class_dir.glob("*.jpeg")) +
+                        list(class_dir.glob("*.bmp"))
+                    )
             
             n_images = len(image_files)
             class_counts.append((class_name, n_images))

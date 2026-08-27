@@ -23,6 +23,22 @@ from src.preprocessing.image_normalization import ImageNormalizer
 from src.models.indus_classifier_cnn import IndusClassifierCNN
 
 
+# Expected archaeological correspondences: match folder -> training class name.
+# Fill these in from the research notebook sources.  `None` means the expected
+# Indus sign has no training class yet, so top-1 correctness cannot be scored
+# for that folder (it is reported as "unmapped" instead).
+EXPECTED_MATCH_MAP = {
+    "match_Indus_225": "sign_25_P225_Cross",
+    "match_Indus_307": "sign_41_P307",
+    "match_Indus_318": "sign_42_P318",
+    "match_Indus_365": "sign_43_P365",
+}
+
+# Training classes whose name starts with this prefix are "not an Indus sign"
+# rejection classes (general graffiti / background), not real signs.
+REJECTION_PREFIX = "zz_"
+
+
 def setup_logging(log_dir):
     """Setup logging configuration"""
     log_dir = Path(log_dir)
@@ -68,6 +84,18 @@ class KeeladiEvaluator:
             self.class_names = [line.strip() for line in f if line.strip()]
         
         self.logger.info(f"Loaded model with {len(self.class_names)} classes")
+
+    def _rejection_class_index(self):
+        """Index of the 'not an Indus sign' rejection class, or None."""
+        for idx, name in enumerate(self.class_names):
+            if name.startswith(REJECTION_PREFIX):
+                return idx
+        return None
+
+    def _is_negative_folder(self, folder_name):
+        """Folders that must NOT be matched to an Indus sign (controls)."""
+        return (folder_name == "general_keeladi_graffiti"
+                or folder_name.startswith("tamil_brahmi_"))
     
     def _list_image_files(self, directory):
         """List all common image format files in a directory"""
@@ -177,6 +205,7 @@ class KeeladiEvaluator:
         """
         self.logger.info(f"Predicting Indus sign matches (threshold={threshold})...")
         predictions = {}
+        rejection_idx = self._rejection_class_index()
         
         for folder_name, images in validation_data.items():
             # Reshape for CNN
@@ -187,18 +216,26 @@ class KeeladiEvaluator:
             pred_classes = np.argmax(pred_probs, axis=1)
             pred_confidences = np.max(pred_probs, axis=1)
             
+            # A prediction of the rejection class means "not an Indus sign"
+            if rejection_idx is not None:
+                is_rejection = pred_classes == rejection_idx
+            else:
+                is_rejection = np.zeros(len(pred_classes), dtype=bool)
+            
             # Get top-3 predictions per image for research analysis
             top3_classes = np.argsort(pred_probs, axis=1)[:, -3:][:, ::-1]
             top3_probs = np.sort(pred_probs, axis=1)[:, -3:][:, ::-1]
             
-            # Filter by threshold
-            high_confidence_mask = pred_confidences >= threshold
+            # Filter by threshold; predictions of the rejection class never
+            # count as Indus matches no matter how confident they are
+            high_confidence_mask = (pred_confidences >= threshold) & ~is_rejection
             high_confidence_matches = pred_classes[high_confidence_mask]
             high_confidence_scores = pred_confidences[high_confidence_mask]
             
             folder_predictions = {
                 'all_predictions': pred_classes,
                 'all_confidences': pred_confidences,
+                'is_rejection': is_rejection,
                 'top3_classes': top3_classes,
                 'top3_probs': top3_probs,
                 'high_confidence_classes': high_confidence_matches,
@@ -216,12 +253,13 @@ class KeeladiEvaluator:
             
             if len(high_confidence_matches) > 0:
                 self.logger.info(f"  Matched classes: {folder_predictions['class_names']}")
-                # Log individual top-3 for research analysis
-                if folder_name in self.validation_files:
-                    for i, fname in enumerate(self.validation_files[folder_name]):
-                        t3 = folder_predictions['top3_class_names'][i]
-                        t3p = folder_predictions['top3_probs'][i]
-                        self.logger.info(f"    [{fname}] Top-3: {list(zip(t3, [f'{p:.3f}' for p in t3p]))}")
+            # Log individual top-3 for research analysis (always, so every
+            # image gets a model verdict in the logs / dashboard)
+            if folder_name in self.validation_files:
+                for i, fname in enumerate(self.validation_files[folder_name]):
+                    t3 = folder_predictions['top3_class_names'][i]
+                    t3p = folder_predictions['top3_probs'][i]
+                    self.logger.info(f"    [{fname}] Top-3: {list(zip(t3, [f'{p:.3f}' for p in t3p]))}")
         
         return predictions
     
@@ -242,7 +280,12 @@ class KeeladiEvaluator:
             'match_rate': 0.0,
             'mean_confidence': 0.0,
             'direct_matches': {},
-            'most_common_indus_signs': {}
+            'most_common_indus_signs': {},
+            'known_pair': {},          # folder -> top-1 correctness vs expected sign
+            'known_pair_correct': 0,
+            'known_pair_total': 0,
+            'unmapped_folders': [],    # match folders without an expected-class mapping
+            'negative_rejection': {},  # control folders -> rejection/false-match stats
         }
         
         all_confidences = []
@@ -264,6 +307,36 @@ class KeeladiEvaluator:
                     'matches': num_matches,
                     'match_rate': num_matches / num_images if num_images > 0 else 0,
                     'mean_confidence': mean_conf
+                }
+                # Honest top-1 correctness against the expected correspondence
+                expected = EXPECTED_MATCH_MAP.get(folder_name)
+                if expected is None:
+                    analysis['unmapped_folders'].append(folder_name)
+                elif expected in self.class_names:
+                    expected_idx = self.class_names.index(expected)
+                    correct = int(np.sum(pred_data['all_predictions'] == expected_idx))
+                    analysis['known_pair'][folder_name] = {
+                        'expected': expected,
+                        'images': num_images,
+                        'correct': correct,
+                    }
+                    analysis['known_pair_correct'] += correct
+                    analysis['known_pair_total'] += num_images
+                else:
+                    analysis['unmapped_folders'].append(folder_name)
+            
+            # Control folders: correct behaviour is REJECTION, not a match
+            if self._is_negative_folder(folder_name):
+                rejected = int(np.sum(pred_data['is_rejection']))
+                false_matches = int(np.sum(
+                    (pred_data['all_confidences'] >= 0.5)
+                    & ~pred_data['is_rejection']))
+                analysis['negative_rejection'][folder_name] = {
+                    'images': num_images,
+                    'rejected': rejected,
+                    'rejection_rate': rejected / num_images if num_images else 0.0,
+                    'false_matches': false_matches,
+                    'false_match_rate': false_matches / num_images if num_images else 0.0,
                 }
         
         # Calculate overall match rate
@@ -289,6 +362,24 @@ class KeeladiEvaluator:
         self.logger.info(f"  Match rate: {analysis['match_rate']:.2%}")
         self.logger.info(f"  Mean confidence: {analysis['mean_confidence']:.4f}")
         self.logger.info(f"  Unique Indus signs matched: {len(analysis['most_common_indus_signs'])}")
+        
+        # Honest metrics log
+        if analysis['known_pair_total']:
+            self.logger.info(
+                f"  Known-pair top-1 accuracy: "
+                f"{analysis['known_pair_correct']}/{analysis['known_pair_total']}")
+        for folder, kp in analysis['known_pair'].items():
+            self.logger.info(
+                f"    {folder}: expected {kp['expected']} -> "
+                f"{kp['correct']}/{kp['images']} correct")
+        if analysis['unmapped_folders']:
+            self.logger.info(
+                f"  Unmapped match folders (expected sign not in training set): "
+                f"{analysis['unmapped_folders']}")
+        for folder, nr in analysis['negative_rejection'].items():
+            self.logger.info(
+                f"    control {folder}: rejected {nr['rejected']}/{nr['images']} "
+                f"({nr['rejection_rate']:.0%}), false matches {nr['false_matches']}")
         
         return analysis
     
@@ -330,6 +421,36 @@ class KeeladiEvaluator:
                 f.write(f"  Mean confidence:    {stats['mean_confidence']:.4f}\n")
             
             f.write("\n" + "-" * 70 + "\n")
+            f.write("HONEST METRICS (what the numbers above actually mean)\n")
+            f.write("-" * 70 + "\n\n")
+            
+            f.write("Known-pair top-1 accuracy (did the model predict the EXPECTED sign?):\n")
+            if analysis['known_pair_total']:
+                f.write(f"  Overall: {analysis['known_pair_correct']}/"
+                        f"{analysis['known_pair_total']}\n")
+            else:
+                f.write("  Overall: no mapped known pairs\n")
+            for folder, kp in analysis['known_pair'].items():
+                f.write(f"  {folder}: expected {kp['expected']} -> "
+                        f"{kp['correct']}/{kp['images']} correct\n")
+            if analysis['unmapped_folders']:
+                f.write("  Unmapped folders (expected sign has no training class;\n"
+                        "  fill EXPECTED_MATCH_MAP in src/evaluate.py from your\n"
+                        "  notebook sources):\n")
+                for folder in analysis['unmapped_folders']:
+                    f.write(f"    - {folder}\n")
+            
+            f.write("\nControl folders (correct answer = REJECT, not match):\n")
+            if analysis['negative_rejection']:
+                for folder, nr in analysis['negative_rejection'].items():
+                    f.write(f"  {folder}: rejected {nr['rejected']}/{nr['images']} "
+                            f"({nr['rejection_rate']:.0%}), "
+                            f"false matches {nr['false_matches']} "
+                            f"({nr['false_match_rate']:.0%})\n")
+            else:
+                f.write("  none\n")
+            
+            f.write("\n" + "-" * 70 + "\n")
             f.write("TOP 15 MOST FREQUENTLY MATCHED INDUS SIGNS\n")
             f.write("-" * 70 + "\n\n")
             
@@ -365,6 +486,241 @@ class KeeladiEvaluator:
             folder_filter=['general_keeladi_graffiti', 'match_Indus_*', 'tamil_brahmi_*']
         )
     
+    def run_decoding(self, output_dir):
+        """
+        Parallel dual-script inscription decoding stage.
+
+        Every Atan letter and every graffiti is read against BOTH scripts
+        in parallel (Tamil-Brahmi reference alphabet + Indus CNN), each
+        identification shown together with its lexicon text annotation.
+        Pot outlines / sherd ends are accounted for (reported) but never
+        classified, so they cannot cause false comparisons.
+        """
+        from src.decoding import InscriptionDecoder, KEELADI_NAMES
+
+        output_dir = Path(output_dir)
+        decode_dir = output_dir / "decoded"
+        decode_dir.mkdir(parents=True, exist_ok=True)
+
+        decoder = InscriptionDecoder(self.data_dir, self.normalizer,
+                                     classifier=self.classifier,
+                                     class_names=self.class_names)
+        lines = ["PARALLEL DECODING - Tamil-Brahmi vs Indus",
+                 "=" * 70,
+                 "B: = Tamil-Brahmi read (deciphered, real readings)",
+                 "I: = Indus read (meanings from the project lexicon data/lexicon.json)",
+                 "",
+                 "--- Atan potsherds (multi-letter inscriptions) ---"]
+
+        def ann(text, meaning):
+            return f"{text}" + (f" '{meaning}'" if meaning else "")
+
+        # 1. Multi-character Tamil-Brahmi inscriptions
+        tb_dir = self.data_dir / "processed" / "val" / "tamil_brahmi"
+        insc_folders = sorted(tb_dir.glob("inscriptions_*")) if tb_dir.exists() else []
+        for folder in insc_folders:
+            for img in sorted(self._list_image_files(folder)):
+                result = decoder.decode_inscription(img)
+                outline_note = ("outline accounted for, excluded from "
+                                "classification" if result["outline_present"]
+                                else "no outline")
+                lines.append(f"{img.name} [{outline_note}]")
+                self.logger.info(f"DECODED {img.name}: "
+                                 f"{len(result['segments'])} letters, "
+                                 f"outline_present={result['outline_present']}")
+                if not result["segments"]:
+                    lines.append("  no letter segments (inscription may be "
+                                 "fused to the outline - manual ROI needed)")
+                    continue
+                decoder.visualize_decoding(
+                    img, result, decode_dir / f"{img.stem}_annotated.png")
+                for i, seg in enumerate(result["segments"], 1):
+                    b_txt = ann(f"{seg['transliteration'] or seg['letter_id']}"
+                                f" ({seg['score']:.2f})", seg['meaning'])
+                    i_txt = "no Indus read"
+                    if seg.get("indus_top3"):
+                        t = seg["indus_top3"][0]
+                        i_txt = ann(f"{t['class']} (p={t['prob']:.2f})",
+                                    t['meaning'])
+                    lines.append(f"  L{i}: B: {b_txt} | I: {i_txt}")
+                lines.append(f"  Brahmi reading: {result['brahmi_reading']}")
+                lines.append(f"  Indus reading:  {result['indus_reading']}")
+                nlp = decoder.nlp_decode(result, corpus_key=folder.name)
+                lines.append("  NLP DECODE (CNN letters + NLP composition):")
+                if nlp["corpus"]:
+                    reading, meaning = nlp["corpus"]
+                    lines.append(f"    decoded name: '{reading}' - {meaning}")
+                if nlp["name_match"]:
+                    nm, nr = nlp["name_match"]
+                    lines.append(f"    name match: {nm} - "
+                                 f"{KEELADI_NAMES[nm]} (similarity {nr:.0%})")
+                lines.append(f"    letter reading: {result['brahmi_reading']} "
+                             f"(composed: {nlp['word'] or '-'})")
+                lines.append(f"    Indus gloss: {nlp['indus_gloss'] or '-'}")
+
+        # 2. Single-symbol Keeladi graffiti, read against both scripts
+        lines += ["", "--- Keeladi graffiti (single symbols, both reads) ---"]
+        val_dir = self.data_dir / "processed" / "val" / "keeladi"
+        graffiti_folders = sorted(p for p in val_dir.iterdir() if p.is_dir()) \
+            if val_dir.exists() else []
+        for folder in graffiti_folders:
+            for img in sorted(self._list_image_files(folder)):
+                processed = self.normalizer.process_image(img)
+                r = decoder.decode_graffiti(processed)
+                letter_id, score = r["brahmi"]
+                b_txt = ann(f"{r['brahmi_translit'] or letter_id} "
+                            f"({score:.2f})", r["brahmi_meaning"]) \
+                    if letter_id else "no Brahmi read"
+                i_parts = []
+                for t in r["indus_top3"]:
+                    i_parts.append(ann(f"{t['class']} (p={t['prob']:.2f})",
+                                       t['meaning']))
+                lines.append(f"{folder.name}/{img.name}:")
+                lines.append(f"  B: {b_txt}")
+                lines.append(f"  I: {' | '.join(i_parts)}")
+
+        report_path = decode_dir / "decoded_readings.txt"
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        self.logger.info(f"Decoded readings saved to {report_path}")
+        return report_path
+
+    def generate_known_pair_comparison(self, output_dir):
+        """
+        Notebook-style side-by-side figure: Keeladi graffiti (left) vs
+        INDUS sign (right) with a shape MATCH PERCENTAGE per row - the
+        same layout as the researcher's notebook comparison chart.
+
+        For every curated Indus reference image the best-matching Keeladi
+        potsherd is found automatically (dilation-tolerant IoU between the
+        reference glyph and the potsherd's inner-letter glyph, outline
+        excluded), then the pairs + percentages are rendered and saved as
+        known_pair_comparison.png / known_pair_scores.json.
+        """
+        import cv2
+        import json as _json
+        import re
+        from src.decoding import InscriptionDecoder
+
+        output_dir = Path(output_dir)
+        matched_dir = self.data_dir / "processed" / "train" / "indus_matched"
+        val_keeladi = self.data_dir / "processed" / "val" / "keeladi"
+        if not matched_dir.exists() or not val_keeladi.exists():
+            return None
+
+        decoder = InscriptionDecoder(self.data_dir, self.normalizer)
+
+        # candidate pool: every Keeladi val image (match folders + graffiti)
+        candidates = []
+        for folder in sorted(val_keeladi.iterdir()):
+            if folder.is_dir():
+                candidates.extend(sorted(self._list_image_files(folder)))
+
+        def inner_glyphs(path):
+            """Per-letter glyphs of a potsherd (outline excluded), 64x64.
+
+            The Indus reference is compared against each letter segment
+            separately and the best local match is kept, so extra strokes
+            elsewhere on the sherd cannot dilute the score."""
+            segments, _outline = decoder.segment_inscription(path)
+            return [s["glyph"] for s in segments]
+
+        def ref_glyph(path):
+            gray = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+            if gray is None:
+                return None
+            binary = decoder._binarize(gray)
+            n, _l, cstats, _c = cv2.connectedComponentsWithStats(binary, 8)
+            if n < 2:
+                return None
+            i_max = 1 + int(np.argmax(cstats[1:, 4]))
+            x, y, bw, bh, _a = cstats[i_max]
+            return decoder._crop_to_bbox(binary, x, y, bw, bh)
+
+        def cov(a, b):
+            """Bidirectional stroke coverage: how much of each drawing's
+            strokes are present in the (dilated) other one."""
+            k = np.ones((3, 3), np.uint8)
+            A = (a > 0).astype(np.uint8)
+            B = (b > 0).astype(np.uint8)
+            na, nb = np.count_nonzero(A), np.count_nonzero(B)
+            if not na or not nb:
+                return 0.0
+            Ad = cv2.dilate(A, k, iterations=2)
+            Bd = cv2.dilate(B, k, iterations=2)
+            ca = np.count_nonzero(A & Bd) / na
+            cb = np.count_nonzero(B & Ad) / nb
+            return 100.0 * (ca + cb) / 2.0
+
+        def shape_pct(rg, glyph_list):
+            return max([cov(rg, g) for g in glyph_list], default=0.0)
+
+        cand_glyphs = [(c, inner_glyphs(c)) for c in candidates]
+        cand_glyphs = [(c, g) for c, g in cand_glyphs if g]
+
+        used = set()
+        rows = []
+        for sub in sorted(matched_dir.iterdir()):
+            if not sub.is_dir():
+                continue
+            # pair each reference with its expected Keeladi match folder
+            # (the notebook pairing); variants / missing folders fall back
+            # to the best not-yet-used candidate so no sherd repeats
+            m = re.search(r"P(\d+)", sub.name)
+            val_dir = val_keeladi / f"match_Indus_{m.group(1)}" if m else None
+            expected = sorted(self._list_image_files(val_dir)) \
+                if val_dir and val_dir.exists() else []
+            for ref in sorted(self._list_image_files(sub)):
+                rg = ref_glyph(ref)
+                if rg is None:
+                    continue
+                pool = [cg for cg in cand_glyphs
+                        if cg[0] in expected and cg[0].name not in used]
+                if not pool:
+                    pool = [cg for cg in cand_glyphs
+                            if cg[0].name not in used] or cand_glyphs
+                best_cand, best_pct = max(
+                    ((cg, shape_pct(rg, gl)) for cg, gl in pool),
+                    key=lambda t: t[1])
+                used.add(best_cand.name)
+                rows.append({"class": sub.name, "indus": ref.name,
+                             "keeladi": best_cand.name,
+                             "match_pct": round(best_pct, 1)})
+        order = {"225": 0, "307": 1, "365": 2, "318": 3, "318b": 4}
+        rows.sort(key=lambda r: order.get(Path(r["indus"]).stem, 99))
+        if not rows:
+            return None
+
+        # notebook-style two-column figure with a percentage column
+        fig, axes = plt.subplots(len(rows), 3, figsize=(7, 3 * len(rows)),
+                                 gridspec_kw={"width_ratios": [1, 1, 0.45]})
+        if len(rows) == 1:
+            axes = np.array([axes])
+        axes[0, 0].set_title("Keeladi graffiti", fontweight="bold")
+        axes[0, 1].set_title("INDUS sign", fontweight="bold")
+        axes[0, 2].set_title("Match", fontweight="bold")
+        for r, row in enumerate(rows):
+            cand_path = next(c for c in candidates if c.name == row["keeladi"])
+            ref_path = matched_dir / row["class"] / row["indus"]
+            for ax, path in ((axes[r, 0], cand_path), (axes[r, 1], ref_path)):
+                img = cv2.imread(str(path))
+                ax.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+                ax.axis("off")
+            axes[r, 2].axis("off")
+            axes[r, 2].text(0.5, 0.5, f'{row["match_pct"]:.0f}%',
+                            ha="center", va="center",
+                            fontsize=20, fontweight="bold")
+        fig.tight_layout()
+        png = output_dir / "known_pair_comparison.png"
+        fig.savefig(png, dpi=110, bbox_inches="tight")
+        plt.close(fig)
+        with open(output_dir / "known_pair_scores.json", "w",
+                  encoding="utf-8") as f:
+            _json.dump(rows, f, ensure_ascii=False, indent=2)
+        self.logger.info(f"Known-pair comparison figure saved to {png} "
+                         f"({len(rows)} rows)")
+        return png
+
     def _plot_match_statistics(self, analysis, output_dir):
         """Create visualization of match statistics"""
         try:
@@ -744,6 +1100,14 @@ def main():
         # Generate report
         logger.info("Generating evaluation reports and visualizations...")
         evaluator.generate_report(predictions, analysis, output_dir)
+        
+        # Decode inscriptions (segmentation + lexicon readings)
+        logger.info("Running inscription decoding...")
+        evaluator.run_decoding(output_dir)
+
+        # Notebook-style Keeladi-vs-Indus comparison with match %
+        logger.info("Generating known-pair comparison figure...")
+        evaluator.generate_known_pair_comparison(output_dir)
         
         logger.info("=" * 60)
         logger.info("EVALUATION PIPELINE COMPLETED SUCCESSFULLY")

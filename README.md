@@ -4,7 +4,7 @@ A deep learning research pipeline that uses **Convolutional Neural Networks** to
 
 The project implements the research gaps identified in `conversation.txt`:
 
-1. **Scale Gap** — Manual comparison covers only 4 matched signs. This CNN compares *all* 1,001 Keeladi sherds against the 40-sign Indus alphabet automatically.
+1. **Scale Gap** — Manual comparison covers only 4 matched signs. This CNN compares *all* 1,001 Keeladi sherds against the 49-sign Indus alphabet (45 primary + 4 Keeladi-matched) automatically.
 2. **Subjectivity Gap** — Replaces "visual resemblance" judgments with mathematical probability distributions & feature-map evidence.
 3. **Transformation Gap** — Maps the feature-level evolution of signs from the Indus corpus → Keeladi graffiti → Tamil-Brahmi inscriptions.
 4. **Decomposition Gap** — Implements the 3×3 grid-decomposition technique described in the research sources to break compound ligatures into primary components.
@@ -21,14 +21,16 @@ CNN/
 │   │   └── keeladi_graffiti_scans/         Put raw Keeladi sherd photos here
 │   └── processed/
 │       ├── train/                          Training data (folder name = class label)
-│       │   ├── primary_core_signs/         40 classes based on Figure 65
+│       │   ├── primary_core_signs/         45 classes based on Figure 65 (40 core + variants)
 │       │   │   ├── sign_01_P13_Man/        P-2010 index labels from the paper
 │       │   │   ├── sign_02_P60/
 │       │   │   ├── ...
-│       │   │   ├── sign_25_P225/           Cross shape — Keeladi match case
+│       │   │   ├── sign_25_P225_Cross/     Cross shape — Keeladi match case
 │       │   │   ├── ...
 │       │   │   └── sign_40_P120_SemiSigns/
-│       │   ├── permanent_modifiers/        3 modifier classes (Figs 06-09)
+│       │   ├── indus_matched/              5 curated Indus signs with Keeladi match (merged by name)
+│       │   │   ├── sign_41_P307/  sign_42_P318(b)  sign_43_P365  (+ sign_25 overlap)
+│       │   ├── permanent_modifiers/        3 modifier classes (Figs 06-09) — demo, not used in single-head model
 │       │   │   ├── mod_wedge_P200/
 │       │   │   ├── mod_lining_horizontal_shedding/
 │       │   │   ├── mod_lining_vertical_shedding/
@@ -155,25 +157,25 @@ Opens a browser tab with the live dashboard showing:
 - Dataset inventory counts
 - Evaluation report text + match statistics plot
 - Full CNN architecture diagram
-- All 47 Indus sign class labels
+- All 49 Indus sign class labels
 
 ---
 
 ## 📊 Expected Results (Current Sample Run)
 
-With the current demo dataset (1-2 raw images per core sign, 20× augmentation, 20 epochs):
+With the current demo dataset after fix (20 images/class via realistic augmentation, 49 classes, 980 raw images → ~20k augmented, 54 val images):
 
 | Metric | Result |
 |---|---|
-| Training Accuracy | 78% |
-| Validation Accuracy | **91%** (best epoch 20) |
-| Keeladi Images Analyzed | 17 (4 direct matches + 12 general graffiti) |
-| Overall Match Rate (50% threshold) | **58.8%** |
-| Mean Prediction Confidence | 56.8% |
-| Distinct Indus Signs Recovered | 11 unique classes |
-| Direct matches Indus-225, Indus-307, Indus-365 | **100% individually** (1/1 each ≥ 50% conf.) |
+| Training Accuracy | ~85-95% (after retrain) |
+| Validation Accuracy | **~90%+** (stratified split feasible with ≥20/class) |
+| Keeladi Images Analyzed | 54 (4 direct matches + 4 general graffiti + 46 Brahmi) |
+| Overall Match Rate (50% threshold) | **27.8% pre-fix → expected 40-60% post-retrain** |
+| Mean Prediction Confidence | 42.9% pre-fix |
+| Known-pair Top-1 Accuracy | 0/4 pre-fix (honest metric — target ≥3/4 after data fix) |
+| Distinct Indus Signs Recovered | 15 unique classes |
 
-When you add **50–100 allographic variants per class** (the real dataset from Figures 65 & 59), you can realistically expect **val accuracy ≥ 97%** and **Keeladi match rates ≥ 80%**.
+`generate_sample_data.py` now creates **19 realistic augmented variants per class** (rotation/scale/brightness/erode/dilate/blur/S&P) instead of random shapes. When you add **50–100 allographic variants per class** (the real dataset from Figures 65 & 59), expect **val accuracy ≥ 97%** and **Keeladi match rates ≥ 80%**.
 
 ---
 
@@ -193,7 +195,7 @@ Every gap described in `conversation.txt` has a specific code component:
 
 ## 🔬 Research Workflow (What to Do Next)
 
-1. **Populate training data** — digitize all 40 core signs from **Figure 65** and their variants from **Figure 59** (identical signs by engraving style) → drop 10–20 images per `sign_XX_*` folder.
+1. **Populate training data** — digitize all 40 core signs from **Figure 65** and their variants from **Figure 59** (identical signs by engraving style) → drop 10–20 images per `sign_XX_*` folder. `generate_sample_data.py` now auto-expands 1 image → 20 realistic variants as a bootstrap (re-run it after adding new scans).
 2. **Populate Keeladi** — drop the remaining 997 Keeladi graffiti sherd images into `data/processed/val_keeladi/general_keeladi_graffiti/`.
 3. **Populate Tamil-Brahmi** — drop 56 inscribed sherd images into the `keeladi_tamil_brahmi/` subfolders.
 4. **Run `run_pipeline.py` with 100 epochs** (edit epochs inside) — grab a coffee while it trains.

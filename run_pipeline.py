@@ -27,7 +27,7 @@ def run_quick_pipeline():
     logger.info("=" * 60)
     
     # ── Step 1: Training ──────────────────────────────────────────
-    logger.info("\n[STEP 1] Training CNN classifier (20 epochs)...")
+    logger.info("\n[STEP 1] Training CNN classifier (30 epochs)...")
     
     trainer = IndusKeeladiTrainer(data_dir, model_dir, augment_factor=20)
     
@@ -38,11 +38,11 @@ def run_quick_pipeline():
     trainer.build_model()
     trainer.classifier.get_model_summary()
     
-    logger.info("Training (20 epochs, early stopping enabled)...")
+    logger.info("Training (30 epochs, early stopping enabled)...")
     history = trainer.train_model(
         X_train, y_train,
         X_val, y_val,
-        epochs=20,
+        epochs=30,
         batch_size=16
     )
     
@@ -74,6 +74,12 @@ def run_quick_pipeline():
     logger.info("Generating reports...")
     evaluator.generate_report(predictions, analysis, output_dir)
     
+    logger.info("Running inscription decoding...")
+    evaluator.run_decoding(output_dir)
+
+    logger.info("Generating known-pair comparison figure...")
+    evaluator.generate_known_pair_comparison(output_dir)
+    
     logger.info("\n" + "=" * 60)
     logger.info("PIPELINE COMPLETE!")
     logger.info("=" * 60)
@@ -88,6 +94,15 @@ def run_quick_pipeline():
     if analysis['direct_matches']:
         for k, v in analysis['direct_matches'].items():
             logger.info(f"  {k}: {v['match_rate']:.0%} ({v['matches']}/{v['images']})")
+    logger.info("HONEST METRICS:")
+    logger.info(f"  Known-pair top-1 accuracy: "
+                f"{analysis['known_pair_correct']}/{analysis['known_pair_total']}")
+    if analysis['unmapped_folders']:
+        logger.info(f"  Unmapped match folders (fill EXPECTED_MATCH_MAP in "
+                    f"src/evaluate.py): {analysis['unmapped_folders']}")
+    for k, v in analysis['negative_rejection'].items():
+        logger.info(f"  control {k}: rejected {v['rejected']}/{v['images']}, "
+                    f"false matches {v['false_matches']}")
 
 
 if __name__ == "__main__":
