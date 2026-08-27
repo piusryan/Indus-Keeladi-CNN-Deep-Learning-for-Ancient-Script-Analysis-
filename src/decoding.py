@@ -125,7 +125,16 @@ class InscriptionDecoder:
     @staticmethod
     def _image_files(directory):
         exts = {".png", ".jpg", ".jpeg", ".bmp"}
-        return [f for f in Path(directory).iterdir() if f.suffix.lower() in exts]
+        # Support both flat and new subdirectory structure (a/, aa/, etc.)
+        # Use rglob to find all images recursively, handle duplicates
+        files = [f for f in Path(directory).rglob("*") if f.suffix.lower() in exts and f.is_file()]
+        # Deduplicate by filename (for dha/ja alias which is same file in two folders)
+        seen = {}
+        for f in files:
+            if f.name not in seen:
+                seen[f.name] = f
+        # Sort by filename for deterministic order (keeps original lexicon order stable)
+        return sorted(seen.values(), key=lambda x: x.name)
 
     # ── glyph preparation ──────────────────────────────────────────────
     def _binarize(self, gray):
