@@ -2,7 +2,7 @@
 title Figure 2 — Component Diagram
 
 package "Entry points" {
-  [run_pipeline.py\nORCHESTRATOR] as RP
+  [run_pipeline.py ORCHESTRATOR] as RP
   [src/train.py] as TR
   [src/evaluate.py] as EV
   [src/audit_validity.py] as AV

@@ -4,37 +4,37 @@ title Figure 13 — Packages = Directories
 package "CNN (project root)" {
 
   package "src.preprocessing" {
-    [image_normalization\n.ImageNormalizer]
-    [grid_decomposition\n.GridDecomposer]
+    [image_normalization .ImageNormalizer]
+    [grid_decomposition .GridDecomposer]
   }
 
   package "src.models" {
-    [indus_classifier_cnn\n.IndusClassifierCNN]
-    [weight_transfer\n.WeightTransfer]
+    [indus_classifier_cnn .IndusClassifierCNN]
+    [weight_transfer .WeightTransfer]
   }
 
   package "src (analysis)" {
-    [train\n.IndusKeeladiTrainer]
-    [evaluate\n.KeeladiEvaluator]
-    [audit_validity\n.run_audit]
-    [sign_matcher\n.match_all]
-    [siamese_embed\n.main]
-    [digitise_fig65\n.digitise]
-    [decoding\n.InscriptionDecoder]
+    [train .IndusKeeladiTrainer]
+    [evaluate .KeeladiEvaluator]
+    [audit_validity .run_audit]
+    [sign_matcher .match_all]
+    [siamese_embed .main]
+    [digitise_fig65 .digitise]
+    [decoding .InscriptionDecoder]
   }
 
   package "presentation" {
     [dashboard]
-    [cnn_potsherd_annotator\n.PotsherdAnnotator]
-    [cnn_annotation_generator\n.CNNAnnotationGenerator]
-    [fullscreen_resizer\n.FullscreenResizer]
+    [cnn_potsherd_annotator .PotsherdAnnotator]
+    [cnn_annotation_generator .CNNAnnotationGenerator]
+    [fullscreen_resizer .FullscreenResizer]
     [secret_resizer]
     [process_model]
     [reorganize_brahmi]
   }
 
   package "orchestration" {
-    [run_pipeline\n (orchestrator)]
+    [run_pipeline (orchestrator)]
   }
 
   package "notebooks" {

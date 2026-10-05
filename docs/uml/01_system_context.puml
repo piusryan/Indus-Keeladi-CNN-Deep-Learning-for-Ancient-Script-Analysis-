@@ -1,10 +1,10 @@
 @startuml
 title Figure 1 — System Context (C4 Level 1)
 
-actor Researcher as "Archaeologist /\nResearcher"
+actor Researcher as "Archaeologist / Researcher"
 actor Reviewer as Reviewer
 
-system "Indus–Keeladi CNN\n(TensorFlow 2.21 / Python 3.11)" as System
+rectangle "Indus–Keeladi CNN\n(TensorFlow 2.21 / Python 3.11)" as System
 
 database "data/processed/\n(train · val · lexicon)" as Data
 database "models/\n(.keras · classes.txt)" as Models

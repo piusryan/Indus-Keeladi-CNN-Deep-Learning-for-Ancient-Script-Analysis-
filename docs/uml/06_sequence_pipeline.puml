@@ -2,12 +2,12 @@
 title Figure 6 — Sequence: run_pipeline.main()
 
 actor User
-participant RP as run_pipeline.main()
+participant RP as "run_pipeline.main()"
 participant FS as "filesystem (PROJECT_ROOT)"
-participant AV as src.audit_validity
-participant EV as src.evaluate.KeeladiEvaluator
-participant DEC as src.decoding.InscriptionDecoder
-participant SM as src.sign_matcher
+participant AV as "src.audit_validity"
+participant EV as "src.evaluate.KeeladiEvaluator"
+participant DEC as "src.decoding.InscriptionDecoder"
+participant SM as "src.sign_matcher"
 participant PA as cnn_potsherd_annotator
 
 == Honesty gate ==

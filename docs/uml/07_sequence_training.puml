@@ -2,7 +2,7 @@
 title Figure 7 — Sequence: src/train.py main()
 
 actor User
-participant T as src.train.main()
+participant T as "src.train.main()"
 participant TR as IndusKeeladiTrainer
 participant IN as ImageNormalizer
 participant CNN as IndusClassifierCNN
