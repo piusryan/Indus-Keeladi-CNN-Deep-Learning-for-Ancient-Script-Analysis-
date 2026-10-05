@@ -1,0 +1,15 @@
+                                                                  
+     PlantUML version 1.2026.8 / 149874a [2026-09-05 15:59:17 UTC]
+                                                                  
+                                                                  
+      [From 06_sequence_pipeline.puml (line 5) ]                  
+                                                                  
+                                                                  
+     @startuml                                                    
+     title Figure 6 — Sequence: run_pipeline.main()               
+                                                                  
+                                                                  
+     actor User                                                   
+                                                                  
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                             
+      Syntax Error? (Assumed diagram type: sequence)              
