@@ -38,6 +38,166 @@ def setup_logging(log_dir):
     return logging.getLogger(__name__)
 
 
+# ── Figure-65 sign corrections (verified against the source PDFs in docs/) ──
+#
+# "THE INDUS SCRIPT - Recognition as an Alphabet", Fig. 65 lists 40 serial signs.
+# Several serials list multiple P-numbers joined by "or"; those are ONE sign drawn
+# in different ways (allographs). The class folders had split them apart, which
+# created 5 duplicate near-identical classes and forced the model to separate a
+# single sign into several. Merging gives the source's 40 primary core signs.
+ALLOGRAPH_GROUPS = {
+    "sign_18_P181_P187": ("sign_18_P181", "sign_18_P187"),
+    "sign_21_P200_P209": ("sign_21_P200", "sign_21_P209"),
+    "sign_28_P272_P371": ("sign_28_P272", "sign_28_P371"),
+    "sign_30_P282_P285_P287": ("sign_30_P282", "sign_30_P285", "sign_30_P287"),
+    # NOTE: serial 17 ("156 or 165") was already merged as sign_17_P156_P165.
+    # NOTE: sign_12/13_P130* and sign_35/36_P341* are DIFFERENT serials that merely
+    #       share a P-number - they are intentionally NOT merged.
+}
+_MEMBER_TO_GROUP = {m: g for g, ms in ALLOGRAPH_GROUPS.items() for m in ms}
+
+# The Keeladi annexure (keeladi_indus.pdf p.63) numbers its INDUS signs with
+# MAHADEVAN (M-1977) numbers, not P-2010 numbers. Verified by glyph shape:
+#   * annexure "225" == Fig.65 serial 24 (M=225, P=219)  -> not serial 25 (P=225)
+#   * annexure "307" == Fig.65 serial 18 (M=304|307, P=181|187)
+# So the annexure images must be trained as those core classes. Applied ONLY to
+# images loaded from indus_matched/, never to primary_core_signs/.
+ANNEXURE_REMAP = {
+    "sign_25_P225_Cross": "sign_24_P219",
+    "sign_41_P307": "sign_18_P181_P187",
+}
+
+# Image extensions treated as training samples.
+_IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
+
+# Classes whose name starts with this prefix are "not an Indus sign"
+# rejection classes.  src/evaluate.py (REJECTION_PREFIX) already excludes
+# these from match claims, so a prediction of one means "reject".
+REJECTION_PREFIX = "zz_"
+
+
+def load_fig65_real_glyphs(fig65_dir, class_names):
+    """
+    Load the REAL Fig.65 glyphs digitised by src/digitise_fig65.py and map
+    each onto the class it depicts.
+
+    Why this matters: the folder-per-class corpus is one hand-drawn glyph plus
+    augmented clones of it, so the classifier has never seen an independently
+    drawn allograph.  These 39 glyphs are a genuinely separate rendering of the
+    same signs, which is the only thing that lifts real accuracy.
+
+    Mapping is by Fig.65 SERIAL number, not by P-number: ALLOGRAPH_GROUPS has
+    merged several P-numbers into one class ("181|187" -> sign_18_P181_P187),
+    so P-numbers are ambiguous, while serials stay 1:1.  Returns a list of
+    (class_name, path) pairs; serials with no matching class are skipped.
+    """
+    import json
+    import re
+    from pathlib import Path
+
+    fig65_dir = Path(fig65_dir)
+    manifest_path = fig65_dir / "manifest.json"
+    if not manifest_path.exists():
+        return []
+
+    by_serial = {}
+    for c in class_names:
+        m = re.match(r"sign_(\d+)_", c)
+        if m:
+            by_serial[int(m.group(1))] = c
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    pairs, skipped = [], []
+    for _key, meta in sorted(manifest.items()):
+        serial = int(meta["serial"])
+        cls = by_serial.get(serial)
+        if cls is None:
+            skipped.append(serial)
+            continue
+        p = fig65_dir / meta["file"]
+        if p.exists():
+            pairs.append((cls, p))
+    if skipped:
+        logging.getLogger(__name__).info(
+            f"fig65_real: no class for serials {sorted(set(skipped))} (skipped)")
+    return pairs
+
+
+def generate_rejection_images(n_per_class=60, size=64, seed=1234):
+    """
+    Synthesise "not an Indus sign" training images.
+
+    A closed-set softmax over real sign classes STRUCTURALLY CANNOT say "this
+    is not an Indus sign" -- it is forced to pick the least-bad real sign.
+    That is what produced the 67% false-match rate on general Keeladi
+    graffiti.  Adding explicit rejection classes gives the network somewhere
+    to put probability mass for blank/noise/line-art input.
+
+    These are generated procedurally (blank, noise, pure strokes, blurred
+    blobs) rather than taken from data/processed/val, because the val
+    negatives are the EVALUATION CONTROL for src/audit_validity.openset_audit.
+    Training on them would destroy that audit.  Using them as training data
+    would make the open-set audit meaningless.
+
+    Returns (images, names) with images as float32 (n, size, size, 1) in [0,1].
+    """
+    rng = np.random.default_rng(seed)
+    import cv2
+
+    def blank():
+        lvl = rng.uniform(0.0, 0.12)
+        return np.full((size, size), lvl, np.float32)
+
+    def noise():
+        base = rng.uniform(0.0, 0.15, size=(size, size)).astype(np.float32)
+        # salt & pepper speckle
+        amp = rng.uniform(0.3, 1.0)
+        m = rng.random((size, size)) < rng.uniform(0.05, 0.35)
+        base[m] = amp
+        return np.clip(base, 0, 1)
+
+    def strokes():
+        """Random line art: not a real sign, but has stroke-like structure."""
+        img = np.zeros((size, size), np.float32)
+        for _ in range(rng.integers(2, 6)):
+            p0 = (int(rng.integers(0, size)), int(rng.integers(0, size)))
+            p1 = (int(rng.integers(0, size)), int(rng.integers(0, size)))
+            v = float(rng.uniform(0.6, 1.0))
+            cv2.line(img, p0, p1, v, int(rng.integers(1, 4)))
+        return img
+
+    def blob():
+        """Smooth out-of-focus smudge."""
+        img = np.zeros((size, size), np.float32)
+        for _ in range(rng.integers(1, 4)):
+            c = (int(rng.integers(0, size)), int(rng.integers(0, size)))
+            ax = int(rng.integers(size // 8, size // 2))
+            cv2.ellipse(img, c, (ax, int(ax * rng.uniform(0.4, 1.0))),
+                        float(rng.uniform(0, 180)), 0, 360,
+                        float(rng.uniform(0.5, 1.0)), -1)
+        k = int(rng.choice([5, 9, 15]))
+        return cv2.GaussianBlur(img, (k, k), 0)
+
+    kinds = {
+        "zz_blank": blank,
+        "zz_noise": noise,
+        "zz_strokes": strokes,
+        "zz_blob": blob,
+    }
+    imgs, names = [], []
+    for nm, fn in kinds.items():
+        for _ in range(n_per_class):
+            a = np.clip(np.asarray(fn(), np.float32), 0.0, 1.0)
+            imgs.append(a[..., None])
+            names.append(nm)
+    return np.stack(imgs), names
+
+
+def canonical_class(folder_name):
+    """Folder name -> canonical sign class (applies the allograph merge)."""
+    return _MEMBER_TO_GROUP.get(folder_name, folder_name)
+
+
 class IndusKeeladiTrainer:
     """
     Main training pipeline for Indus script classification
@@ -211,14 +371,38 @@ class IndusKeeladiTrainer:
                 )
         
         return X_train, X_val, y_train, y_val
-    
-    def load_training_data(self, augment=True):
+
+    def _safe_index_split(self, y, test_size=0.2, random_state=42):
+        """
+        Return (train_idx, val_idx) for a stratified split that is safe for
+        classes with only one sample. Used so we can split BEFORE augmenting.
+        """
+        idx = np.arange(len(y))
+        _uniq, counts = np.unique(y, return_counts=True)
+        if np.min(counts) < 2:
+            return train_test_split(idx, test_size=test_size,
+                                    random_state=random_state, shuffle=True)
+        try:
+            return train_test_split(idx, test_size=test_size,
+                                    random_state=random_state, stratify=y)
+        except Exception:
+            return train_test_split(idx, test_size=test_size,
+                                    random_state=random_state, shuffle=True)
+
+    def load_training_data(self, augment=True, split_protocol="leakage_controlled"):
         """
         Load and preprocess training data from directory structure
-        
+
         Args:
             augment: Whether to apply data augmentation
-            
+            split_protocol:
+              "leakage_controlled" (default) - split the ORIGINAL images into
+                  train/val FIRST, then augment ONLY the training split. This
+                  removes the train/val clone overlap that used to inflate the
+                  reported validation accuracy (see src/audit_validity.py).
+              "stratified" - legacy behaviour (augment then split). Kept only
+                  for reproducing the old, leaky numbers; emits a warning.
+
         Returns:
             X_train, y_train, X_val, y_val
         """
@@ -236,70 +420,193 @@ class IndusKeeladiTrainer:
         if matched_dir.exists():
             extra_dirs.append(matched_dir)
 
-        # Get class names from folder names (union across both trees)
-        class_set = []
+        # ------------------------------------------------------------------
+        # Resolve folders -> canonical sign classes.
+        #   * ALLOGRAPH_GROUPS merges Fig.65 "or" variants (45 -> 40 core signs):
+        #     sign_18_P181/P187, sign_21_P200/P209, sign_28_P272/P371 and
+        #     sign_30_P282/P285/P287 are ONE sign each, not four/five.
+        #   * ANNEXURE_REMAP moves the Keeladi annexure images (which use
+        #     MAHADEVAN numbering, verified against docs/*.pdf) into the core
+        #     class they actually belong to, removing the label noise where two
+        #     different glyphs shared the class sign_25_P225_Cross.
+        # This is a load-time remap only: nothing on disk is changed.
+        # ------------------------------------------------------------------
+        canon_to_members = {}          # canonical class -> [(dir, folder_name)]
         for d in extra_dirs:
-            for sub in d.iterdir():
-                if sub.is_dir() and sub.name not in class_set:
-                    class_set.append(sub.name)
-        self.class_names = sorted(class_set)
-        logger.info(f"Found {len(self.class_names)} classes")
+            is_matched = (d.name == "indus_matched")
+            for sub in sorted(d.iterdir()):
+                if not sub.is_dir():
+                    continue
+                cls = canonical_class(sub.name)
+                if is_matched and sub.name in ANNEXURE_REMAP:
+                    cls = ANNEXURE_REMAP[sub.name]
+                # Skip folders that contain no images.  An empty folder (e.g.
+                # sign_40_P120_SemiSigns) would otherwise register a class that
+                # owns a softmax output but has no training signal, so it can
+                # never be predicted and only dilutes the real classes.
+                has_images = any(
+                    p.suffix.lower() in _IMAGE_EXTS
+                    for p in sub.iterdir() if p.is_file()
+                )
+                if not has_images:
+                    logger.warning(f"Skipping empty class folder (no images): {sub}")
+                    continue
+                canon_to_members.setdefault(cls, []).append((d, sub.name))
+
+        self.class_names = sorted(canon_to_members)
+        n_real = len(self.class_names)
+        logger.info(f"Found {n_real} classes "
+                    f"(after Fig.65 allograph merge + annexure remap)")
 
         images = []
         labels = []
+        groups = []          # source-group id per image (its canonical class)
         class_counts = []
+        fig65_is_real = []   # indices of the real Fig.65 glyphs within images
 
-        # Load images from each class folder (across all trees)
+        # Independently drawn REAL Fig.65 glyphs (src/digitise_fig65.py).
+        # These add genuine drawing diversity: every folder-per-class image is
+        # an augmented clone of ONE hand-drawn glyph, so without these the
+        # classifier has never seen a second, independent rendering of a sign.
+        fig65_pairs = load_fig65_real_glyphs(
+            self.data_dir / "processed" / "train" / "fig65_real",
+            self.class_names,
+        )
+        if fig65_pairs:
+            fig65_by_class = {}
+            for cls_name, p in fig65_pairs:
+                fig65_by_class.setdefault(cls_name, []).append(p)
+            logger.info(f"Adding {len(fig65_pairs)} real Fig.65 glyph(s) "
+                        f"across {len(fig65_by_class)} classes "
+                        f"(independent drawings, added to TRAIN only)")
+        else:
+            fig65_by_class = {}
+            logger.info("fig65_real: no manifest found, skipping real glyphs")
+
+        # Load images for each canonical class across all of its member folders
         for class_idx, class_name in enumerate(self.class_names):
             image_files = []
-            for d in extra_dirs:
-                class_dir = d / class_name
-                if class_dir.exists():
-                    image_files += (
-                        list(class_dir.glob("*.png")) +
-                        list(class_dir.glob("*.jpg")) +
-                        list(class_dir.glob("*.jpeg")) +
-                        list(class_dir.glob("*.bmp"))
-                    )
-            
+            for d, folder_name in canon_to_members[class_name]:
+                class_dir = d / folder_name
+                image_files += (
+                    list(class_dir.glob("*.png")) +
+                    list(class_dir.glob("*.jpg")) +
+                    list(class_dir.glob("*.jpeg")) +
+                    list(class_dir.glob("*.bmp"))
+                )
+            # Real Fig.65 glyphs for this class.  Flagged so the split below can
+            # hold them out of validation: they are a single independent
+            # drawing each, and validating on them would measure memorisation of
+            # that one drawing rather than generalisation.
+            fig65_files = fig65_by_class.get(class_name, [])
             n_images = len(image_files)
             class_counts.append((class_name, n_images))
-            logger.info(f"  {class_name}: {n_images} image(s)")
-            
+            logger.info(f"  {class_name}: {n_images} image(s)"
+                        + (f" + {len(fig65_files)} real Fig.65" if fig65_files else ""))
             for image_file in image_files:
                 try:
                     processed_image = self.normalizer.process_image(image_file)
                     images.append(processed_image)
                     labels.append(class_idx)
+                    groups.append(class_name)
                 except Exception as e:
                     logger.error(f"Error loading {image_file}: {e}")
+            for image_file in fig65_files:
+                try:
+                    processed_image = self.normalizer.process_image(image_file)
+                    images.append(processed_image)
+                    labels.append(class_idx)
+                    groups.append(class_name)
+                    fig65_is_real.append(len(images) - 1)
+                except Exception as e:
+                    logger.error(f"Error loading real glyph {image_file}: {e}")
         
         if len(images) == 0:
             raise RuntimeError("No training images were loaded. Check the dataset directory.")
-        
+
         X = np.array(images)
         y = np.array(labels)
-        
+
         # Reshape for CNN (add channel dimension)
         X = X.reshape(X.shape[0], 64, 64, 1)
-        
+
         logger.info(f"Total raw training samples: {len(X)}")
-        
-        # Augment first, then split (so augmented versions stay with their originals in train/val)
-        if augment:
-            X, y = self._augment_dataset(X, y)
-        
-        # Split into train and validation sets
-        X_train, X_val, y_train, y_val = self._safe_train_val_split(X, y, test_size=0.15)
-        
+        fig65_real_idx = np.asarray(sorted(fig65_is_real), dtype=np.int64)
+
+        # ------------------------------------------------------------------
+        # REJECTION ("not an Indus sign") CLASSES
+        # Appended AFTER the real classes so every real class keeps its
+        # original index -- evaluate.py resolves expected class names via the
+        # saved *_classes.txt, and the audit's EXPECTED_MATCH_MAP depends on
+        # those names being stable.
+        # ------------------------------------------------------------------
+        n_rej_per = int(os.environ.get("INDUS_REJECTION_PER_CLASS", "60"))
+        if n_rej_per > 0:
+            rej_X, rej_names = generate_rejection_images(n_per_class=n_rej_per)
+            rej_classes = sorted(set(rej_names))
+            base = len(self.class_names)
+            remap = {nm: base + i for i, nm in enumerate(rej_classes)}
+            self.class_names = self.class_names + rej_classes
+            y_rej = np.asarray([remap[nm] for nm in rej_names], dtype=y.dtype)
+            X = np.concatenate([X, rej_X.astype(X.dtype)], axis=0)
+            y = np.concatenate([y, y_rej], axis=0)
+            logger.info(
+                f"Added {len(rej_classes)} rejection classes "
+                f"({n_rej_per} images each): {rej_classes}")
+            logger.info(f"Total classes now: {len(self.class_names)} "
+                        f"({n_real} real + {len(rej_classes)} rejection)")
+
+        # ------------------------------------------------------------------
+        # LEAKAGE-CONTROLLED SPLIT
+        # Old behaviour augmented FIRST and split SECOND, so augmented clones
+        # of the same source glyph landed in both train and val; the reported
+        # "validation accuracy" mostly measured memorisation (measured by
+        # src.audit_validity.leakage_audit). We now split the ORIGINAL images
+        # first and augment ONLY the training split.
+        # ------------------------------------------------------------------
+        if split_protocol == "stratified":
+            logger.warning(
+                "split_protocol='stratified' reproduces the OLD leaky behaviour "
+                "(augment-then-split); reported accuracy will be inflated. "
+                "Use 'leakage_controlled' for honest numbers.")
+            if augment:
+                X, y = self._augment_dataset(X, y)
+            X_train, X_val, y_train, y_val = self._safe_train_val_split(X, y, test_size=0.15)
+        else:
+            tr_idx, va_idx = self._safe_index_split(y, test_size=0.15)
+            tr_idx, va_idx = np.asarray(tr_idx), np.asarray(va_idx)
+            # The real Fig.65 glyphs are single independent drawings. Keep them
+            # in TRAIN and out of validation: with only one drawing per sign,
+            # validating on it measures memorisation of that drawing, not
+            # generalisation to a new allograph.
+            if len(fig65_real_idx):
+                va_set = set(va_idx.tolist())
+                tr_set = set(tr_idx.tolist())
+                moved = [i for i in fig65_real_idx.tolist()
+                         if i in va_set and i not in tr_set]
+                va_idx = np.asarray([i for i in va_idx.tolist() if i not in set(moved)],
+                                    dtype=np.int64)
+                tr_idx = np.concatenate([tr_idx, np.asarray(moved, dtype=np.int64)])
+                tr_idx.sort()
+                logger.info(
+                    f"Real Fig.65 glyphs: moved {len(moved)} from val into train "
+                    f"(held out of validation on purpose)")
+            X_train, y_train = X[tr_idx], y[tr_idx]
+            X_val, y_val = X[va_idx], y[va_idx]
+            if augment:
+                X_train, y_train = self._augment_dataset(X_train, y_train)
+            logger.info(
+                "Leakage-controlled split: originals split first; augmentation "
+                "applied to the TRAIN split only (val images are never augmented).")
+
         logger.info(f"Training set: {X_train.shape[0]} samples")
         logger.info(f"Validation set: {X_val.shape[0]} samples")
-        
+
         # Log class distribution summary
         train_unique, train_counts = np.unique(y_train, return_counts=True)
         val_unique, val_counts = np.unique(y_val, return_counts=True)
         logger.info(f"Train classes: {len(train_unique)}, Val classes: {len(val_unique)}")
-        
+
         return X_train, y_train, X_val, y_val
     
     def build_model(self, num_classes=None):
@@ -419,8 +726,18 @@ def main():
     logger.info("INDUS-KEELADI CNN TRAINING PIPELINE STARTED")
     logger.info("=" * 60)
     
+    # Schedule is configurable so a fast CPU run and a full-quality run can both
+    # be reproduced without editing code:
+    #   INDUS_AUG    augmented copies per image (default 25)
+    #   INDUS_EPOCHS training epochs          (default 80)
+    #   INDUS_BATCH  batch size               (default 16)
+    aug_factor = int(os.environ.get("INDUS_AUG", "25"))
+    n_epochs = int(os.environ.get("INDUS_EPOCHS", "80"))
+    batch_size = int(os.environ.get("INDUS_BATCH", "16"))
+    logger.info(f"Schedule: augment={aug_factor}x epochs={n_epochs} batch={batch_size}")
+
     # Initialize trainer
-    trainer = IndusKeeladiTrainer(data_dir, model_dir, augment_factor=25)
+    trainer = IndusKeeladiTrainer(data_dir, model_dir, augment_factor=aug_factor)
     
     # Load training data with augmentation
     logger.info("Loading training data with augmentation...")
@@ -442,8 +759,8 @@ def main():
     history = trainer.train_model(
         X_train, y_train,
         X_val, y_val,
-        epochs=80,
-        batch_size=16
+        epochs=n_epochs,
+        batch_size=batch_size
     )
     
     # Save trained model

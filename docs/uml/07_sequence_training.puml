@@ -1,0 +1,49 @@
+@startuml
+title Figure 7 — Sequence: src/train.py main()
+
+actor User
+participant T as src.train.main()
+participant TR as IndusKeeladiTrainer
+participant IN as ImageNormalizer
+participant CNN as IndusClassifierCNN
+participant FS as filesystem
+
+User -> T : python src/train.py
+T -> T : read INDUS_AUG=25, INDUS_EPOCHS=80, INDUS_BATCH=16
+T -> TR : IndusKeeladiTrainer(data_dir, model_dir, augment_factor)
+
+== Discover classes ==
+TR -> FS : list primary_core_signs/ + indus_matched/
+TR -> TR : canonical_class()\n[ALLOGRAPH_GROUPS + ANNEXURE_REMAP]
+TR -> FS : fig65_real/manifest.json
+TR -> TR : load_fig65_real_glyphs()  (mapped by SERIAL)
+TR -> TR : generate_rejection_images()  zz_ families
+
+== Preprocess originals ==
+loop each image
+  TR -> IN : process_image(path)
+  IN -> IN : grayscale, denoise, Otsu polarity,\nautocrop, deskew, resize, [0,1]
+  IN --> TR : 64x64x1 float32
+end
+
+== Leakage-controlled split ==
+TR -> TR : _safe_index_split(y, test_size=0.2)
+TR -> TR : SPLIT originals first
+TR -> TR : _augment_dataset(X_train, y_train)\n(train split ONLY)
+
+== Build + train ==
+TR -> CNN : build_model(num_classes=43)
+CNN --> TR : compiled Sequential model
+TR -> TR : get_model_summary()
+TR -> CNN : train(X_tr, y_tr, X_va, y_va, epochs, batch_size)
+note right of CNN
+  Adam 1e-3
+  EarlyStopping(patience=10, restore_best_weights)
+  ReduceLROnPlateau(factor=0.5, patience=5)
+end
+
+== Save ==
+TR -> FS : models/indus_classifier.keras
+TR -> FS : models/indus_classifier_classes.txt
+TR --> User : "TRAINING PIPELINE COMPLETED SUCCESSFULLY"
+@enduml

@@ -11,6 +11,28 @@ The project implements the research gaps identified in `conversation.txt`:
 
 ---
 
+## 📚 Documentation
+
+| Document | What it covers |
+|---|---|
+| **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Developer reference — purpose, tech stack, repository layout, data model, full module reference with every public method, execution flows, configuration constants, extension guide, design invariants, and known limitations |
+| **[docs/UML_DIAGRAMS.md](docs/UML_DIAGRAMS.md)** | 14 PlantUML diagrams (system context, component, class, sequence, activity, state, deployment, package, use case) with render instructions |
+| **[docs/uml/](docs/uml/)** | The same diagrams as standalone `.puml` files, ready to render in batch |
+| **[docs/ANALYSIS_ACCURACY_ROADMAP.md](docs/ANALYSIS_ACCURACY_ROADMAP.md)** | Research analysis, failure taxonomy, and the accuracy roadmap |
+| **[notebooks/](notebooks/)** | `dataset_analysis.ipynb`, `validation_report.ipynb` — EDA and publication plots |
+
+Render the diagrams:
+
+```powershell
+python -m pip install plantuml
+Get-ChildItem docs\uml\*.puml | ForEach-Object { plantuml -tsvg $_.FullName }
+```
+
+Or open any `.puml` in VS Code with the *PlantUML* extension and press `Alt+D`, or paste into
+<https://www.plantuml.com/plantuml/umlviewer>.
+
+---
+
 ## 📁 Project Structure (Dataset Layout)
 
 ```
@@ -106,17 +128,25 @@ Your Python 3.11 virtual environment `indus_keeladi_env` is **already created** 
 
 All commands use the environment's Python directly. From **PowerShell**, **cmd**, or any terminal with `CNN/` as your working directory:
 
-### ✅ Option 1 — One-Click End-to-End Pipeline (Recommended First Run)
+### ✅ Option 1 — One-Click End-to-End Pipeline (Recommended)
 
 ```powershell
-# Runs training (20 epochs quick demo) → saves model → evaluates Keeladi
+# Honest pipeline: loads the trained model, runs the validity audit and the
+# real Keeladi evaluation, and writes MODEL-DERIVED reports (no simulated metrics)
 C:\Users\Administrator\Desktop\CNN\indus_keeladi_env\Scripts\python.exe run_pipeline.py
 ```
 
 Produces:
-- Saved model weights in `models/indus_classifier.keras`
-- Class list in `models/indus_classifier_classes.txt`
-- Text report + 2 charts in `models/evaluation_results/`
+- `models/evaluation_results/validity_audit_report.txt` (+ `validity_audit.json`)
+- `models/evaluation_results/keeladi_evaluation_report.txt`
+- `models/evaluation_results/keeladi_predictions.json` (real per-sherd top-3)
+- comparison galleries / plots in `models/evaluation_results/`
+
+> ⚠️ This script no longer fabricates anything. Previously it built training
+> curves with `np.random.normal`, drew confidences from `np.random.beta`, and
+> printed a hard-coded "75.5% match rate". That code has been deleted; if the
+> model is missing the pipeline stops instead of inventing results.
+
 
 ### ✅ Option 2 — Training Only (Full Quality Mode)
 
@@ -161,35 +191,80 @@ Opens a browser tab with the live dashboard showing:
 
 ---
 
-## 📊 Expected Results (Current Sample Run)
+## 📊 Measured Results (honest, model-derived)
 
-With the current demo dataset after fix (20 images/class via realistic augmentation, 49 classes, 980 raw images → ~20k augmented, 54 val images):
+These are the numbers the current code actually produces (regenerate with
+`python run_pipeline.py`). Earlier README versions quoted **fabricated** metrics
+(fake training curves, `np.random` confidences, a hard-coded "75.5% match rate");
+those have been removed. Full analysis: `docs/ANALYSIS_ACCURACY_ROADMAP.md`.
 
-| Metric | Result |
-|---|---|
-| Training Accuracy | ~85-95% (after retrain) |
-| Validation Accuracy | **~90%+** (stratified split feasible with ≥20/class) |
-| Keeladi Images Analyzed | 54 (4 direct matches + 4 general graffiti + 46 Brahmi) |
-| Overall Match Rate (50% threshold) | **27.8% pre-fix → expected 40-60% post-retrain** |
-| Mean Prediction Confidence | 42.9% pre-fix |
-| Known-pair Top-1 Accuracy | 0/4 pre-fix (honest metric — target ≥3/4 after data fix) |
-| Distinct Indus Signs Recovered | 15 unique classes |
+| Metric | Measured value | Where it comes from |
+|---|---|---|
+| Classes | **43** (40 core signs + 3 annexure-only) | Fig. 65 allograph merge + annexure remap |
+| Training images | 980 | file count on disk |
+| Validation accuracy (leak-controlled) | **0.7279** final / **0.7755** best | `src/train.py` |
+| Leakage: val images with a ≥0.99 twin in train (random split) | 10.20% | `src/audit_validity.py` |
+| Leakage: same, source-disjoint split | 5.00% | `src/audit_validity.py` |
+| Open-set: blank image top-1 confidence | **0.1017** (was 0.9989) | `src/audit_validity.py` |
+| Open-set: positive (real Indus) top-1 confidence | **0.7945** (was 0.5602) | `src/audit_validity.py` |
+| Keeladi images analysed | 37 | `src/evaluate.py` |
+| Mean prediction confidence | 0.4787 | `src/evaluate.py` |
+| Match rate @ 0.5 threshold | 35.14% (13/37) | `src/evaluate.py` |
+| Known-pair top-1 correctness | **0/4** | `src/evaluate.py` + audit |
+| Verification permutation p-value | **0.264** (not significant) | `src/audit_validity.py` |
 
-`generate_sample_data.py` now creates **19 realistic augmented variants per class** (rotation/scale/brightness/erode/dilate/blur/S&P) instead of random shapes. When you add **50–100 allographic variants per class** (the real dataset from Figures 65 & 59), expect **val accuracy ≥ 97%** and **Keeladi match rates ≥ 80%**.
+### Sign matching (open-set verification) — `src/sign_matcher.py`
+
+The four hand-paired sherds are now scored as a **verification** task, not a
+43-way softmax: each sherd is segmented into glyphs (pot outline excluded), then
+matched by CNN embedding similarity + dilation-tolerant stroke coverage.
+
+| sherd | old softmax "match" | **verification score** | rank /43 |
+|---|---|---|---|
+| match_Indus_225 | ~0.47 | **63.96%** | **4** ✅ top-5 |
+| match_Indus_307 | ~0.44 | **64.73%** | 23 |
+| match_Indus_318 | ~0.50 | **71.49%** | 9 |
+| match_Indus_365 | ~0.46 | **63.11%** | 16 |
+
+mean expected **65.82%** vs random-class **57.36%** · 1/4 in top-5 ·
+permutation **p = 0.1025** (not significant at 0.05; n = 4).
+
+The scores rose because the old path was classifying the *whole potsherd photo*
+(auto-crop grabs the pot outline, not the glyph) and reporting a softmax as a
+similarity. Caveat: a high score means the **shapes agree**, not that scripts are
+related.
+
+### 🔎 What this means (the honest finding)
+
+The CNN now **works properly on Indus signs** (0.79 confidence on real sign
+images) and **correctly rejects non-signs** (blank/noise ≈ 0.10–0.19, i.e. it
+can finally say "this is not a sign" — the old model scored blanks at 0.999).
+That improvement came from fixing the *labels*, not the network: Figure 65 shows
+serials 18/21/28/30 carry several P-numbers joined by "or" (one sign, several
+allographs), and the Keeladi annexure numbers its signs with **Mahadevan**, not
+P-2010 — so two "expected matches" were pointing at entirely different glyphs.
+
+Even so, the model does **not** reproduce the 4 hand-published Indus↔Keeladi
+correspondences (0/4, permutation p = 0.264). With n = 4 and synthetic training
+data that proves nothing about the archaeology either way — it says the current
+data cannot test the claim.
+
+**Next high-value step:** digitise Fig. 65 (40 signs) and the Fig. 59 allograph
+plate from `docs/THE INDUS SCRIPT …pdf` (it lists NFM Unicode PUA codepoints per
+sign) to replace the synthetic clones with real allographic variety.
 
 ---
 
-## 🧠 How the Research Gap is Mechanically Addressed
+## 🧠 How the Research Gap is Addressed (status-honest)
 
-Every gap described in `conversation.txt` has a specific code component:
-
-| Gap | AI Roadmap Call | Implementation |
+| Gap | Component | Status |
 |---|---|---|
-| **Scale** | 4 matches → 1,001 sherds | `evaluate.py` iterates every image in `val_keeladi/` non-interactively |
-| **Subjectivity** | Visual → mathematical | `predict_keeladi_matches()` outputs probability distributions; `threshold=0.5` filters objectively |
-| **Transformation** | Evolution mapping | `WeightTransfer` class in [weight_transfer.py](file:///C:/Users/Administrator/Desktop/CNN/src/models/weight_transfer.py#L11-L206) does progressive unfreezing + domain adaptation |
-| **Decomposition** | 3×3 grid method | `GridDecomposer` in [grid_decomposition.py](file:///C:/Users/Administrator/Desktop/CNN/src/preprocessing/grid_decomposition.py#L11-L193) generates 9-cell density + symmetry signatures |
-| **Style-invariance** | Ignore engraving style | 5-layer Keras augmentation in train.py mimics allographic variation |
+| **Scale** | `evaluate.py` scores every sherd non-interactively | implemented (37 sherds scored) |
+| **Subjectivity** | `predict_keeladi_matches()` returns probability distributions | implemented |
+| **Transformation** | `WeightTransfer` progressive unfreeze + domain adaptation | scaffolded; not yet run on real data |
+| **Decomposition** | `GridDecomposer` 3×3 density/symmetry features | implemented but **not fed to the model** |
+| **Validity (new)** | `src/audit_validity.py` leakage / open-set / verification | implemented, and it *fails* the current setup |
+
 
 ---
 

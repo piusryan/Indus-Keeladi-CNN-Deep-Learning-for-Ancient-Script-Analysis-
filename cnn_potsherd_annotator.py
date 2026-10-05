@@ -1,9 +1,17 @@
 """
-CNN-Based Potsherd Annotator (FIXED)
+Potsherd ANNOTATOR (honesty note included).
+
 Generates annotated potsherd images with per-character red bounding boxes.
-FIXES:
-- atan1, atan2, atan8 now have 3 characters each (was 1, causing single huge box)
-- detect_character_regions now robustly filters potsherd outline vs letters
+
+IMPORTANT: the `_load_character_mappings()` table below contains AUTHORED
+REFERENCE READINGS (the published corpus attribution of each sherd slot) and
+fixed display confidences. They are drawn on the images as the EXPECTED reading,
+NOT as CNN inference. The Brahmi transliteration IS produced by a real
+dilation-tolerant template matcher against the reference letter images, but the
+`indus` P-numbers in the mapping table are authored, not predicted.
+
+For genuine model predictions see `python run_pipeline.py` ->
+`models/evaluation_results/keeladi_predictions.json`.
 """
 
 import cv2

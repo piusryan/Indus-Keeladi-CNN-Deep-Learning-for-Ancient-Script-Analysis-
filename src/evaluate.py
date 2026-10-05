@@ -23,16 +23,34 @@ from src.preprocessing.image_normalization import ImageNormalizer
 from src.models.indus_classifier_cnn import IndusClassifierCNN
 
 
-# Expected archaeological correspondences: match folder -> training class name.
-# Fill these in from the research notebook sources.  `None` means the expected
-# Indus sign has no training class yet, so top-1 correctness cannot be scored
-# for that folder (it is reported as "unmapped" instead).
+# Expected archaeological correspondences: match folder -> ACCEPTABLE class names.
+#
+# CORRECTION (verified against the source PDFs in docs/): the Keeladi annexure
+# (keeladi_indus.pdf, p.63, "SIMILARITIES BETWEEN GRAFFITI SYMBOLS OF KEELADI AND
+# SIGNS OF INDUS CIVILIZATION") numbers its signs with MAHADEVAN (M-1977) numbers,
+# NOT the P-2010 numbers used by the class folder names. Evidence:
+#   * annexure "INDUS SIGN-307" is a D-with-slash glyph = Fig.65 SERIAL 18, whose
+#     M-1977 column reads "304 or 307". No P-2010 entry equals 307.
+#   * annexure "INDUS SIGN-225" = Fig.65 SERIAL 24 (M-1977 = 225, P-2010 = 219).
+#     Serial 25 (P-2010 = 225) is a *different* glyph (bowtie + chevron).
+#
+# So the old mapping (225 -> sign_25_P225_Cross, 307 -> sign_41_P307) pointed at
+# the wrong signs. Values are LISTS because one serial can have several P-numbers
+# (serial 18 = "181 or 187"), i.e. allographs of the same sign.
 EXPECTED_MATCH_MAP = {
-    "match_Indus_225": "sign_25_P225_Cross",
-    "match_Indus_307": "sign_41_P307",
-    "match_Indus_318": "sign_42_P318",
-    "match_Indus_365": "sign_43_P365",
+    "match_Indus_225": ["sign_24_P219"],            # M-1977 225 == Fig.65 serial 24
+    "match_Indus_307": ["sign_18_P181_P187"],        # M-1977 307 == Fig.65 serial 18
+    "match_Indus_318": ["sign_42_P318", "sign_42_P318b"],  # not in the core 40
+    "match_Indus_365": ["sign_43_P365"],             # not in the core 40
 }
+
+
+def expected_classes(folder_name):
+    """Return the list of acceptable class names for a match folder (always a list)."""
+    v = EXPECTED_MATCH_MAP.get(folder_name)
+    if v is None:
+        return []
+    return list(v) if isinstance(v, (list, tuple, set)) else [v]
 
 # Training classes whose name starts with this prefix are "not an Indus sign"
 # rejection classes (general graffiti / background), not real signs.
@@ -308,22 +326,24 @@ class KeeladiEvaluator:
                     'match_rate': num_matches / num_images if num_images > 0 else 0,
                     'mean_confidence': mean_conf
                 }
-                # Honest top-1 correctness against the expected correspondence
-                expected = EXPECTED_MATCH_MAP.get(folder_name)
-                if expected is None:
+                # Honest top-1 correctness against the expected correspondence(s).
+                # A list means several class names are acceptable (allographs of
+                # one Fig.65 serial, or two annexure glyphs sharing a label).
+                expected_list = expected_classes(folder_name)
+                present = [e for e in expected_list if e in self.class_names]
+                if not present:
                     analysis['unmapped_folders'].append(folder_name)
-                elif expected in self.class_names:
-                    expected_idx = self.class_names.index(expected)
-                    correct = int(np.sum(pred_data['all_predictions'] == expected_idx))
+                else:
+                    idxs = [self.class_names.index(e) for e in present]
+                    correct = int(np.sum(
+                        np.isin(pred_data['all_predictions'], idxs)))
                     analysis['known_pair'][folder_name] = {
-                        'expected': expected,
+                        'expected': present,
                         'images': num_images,
                         'correct': correct,
                     }
                     analysis['known_pair_correct'] += correct
                     analysis['known_pair_total'] += num_images
-                else:
-                    analysis['unmapped_folders'].append(folder_name)
             
             # Control folders: correct behaviour is REJECTION, not a match
             if self._is_negative_folder(folder_name):

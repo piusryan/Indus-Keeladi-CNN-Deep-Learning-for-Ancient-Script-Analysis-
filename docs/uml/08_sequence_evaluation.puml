@@ -1,0 +1,41 @@
+@startuml
+title Figure 8 — Sequence: KeeladiEvaluator
+
+actor User
+participant EV as KeeladiEvaluator
+participant IN as ImageNormalizer
+participant CNN as IndusClassifierCNN
+participant DEC as InscriptionDecoder
+participant FS as filesystem
+
+User -> EV : load model + class names
+EV -> FS : models/indus_classifier.keras
+EV -> FS : models/indus_classifier_classes.txt
+EV -> CNN : load_model(path)
+EV --> User : "Loaded model with 43 classes"
+
+== Load validation set ==
+EV -> FS : walk data/processed/val/{keeladi,tamil_brahmi}
+loop each image
+  EV -> IN : process_image(path)
+  IN --> EV : 64x64x1 array
+end
+EV --> User : validation_data dict
+
+== Predict ==
+loop each image
+  EV -> CNN : predict(X)
+  CNN --> EV : softmax (43,)
+  EV -> EV : top-3 argsort
+  EV -> EV : if argmax is zz_ prefix -> REJECT\n(never counted as match)
+end
+
+== Analyse + report ==
+EV -> EV : analyze_civilization_link(predictions)
+EV -> FS : keeladi_evaluation_report.txt
+EV -> FS : match_statistics.png\nconfidence_distribution.png\ngraffiti_gallery_*.png
+EV -> DEC : run_decoding(EVAL_DIR)
+DEC -> FS : decoded/decoded_readings.txt
+EV -> FS : known_pair_comparison.png\nknown_pair_scores.json
+EV --> User : report path + summary
+@enduml

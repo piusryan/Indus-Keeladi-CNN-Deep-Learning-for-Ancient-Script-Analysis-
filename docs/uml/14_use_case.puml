@@ -1,0 +1,52 @@
+@startuml
+title Figure 14 — Use Cases
+
+actor Researcher
+actor Reviewer
+
+rectangle "Indus–Keeladi CNN" {
+  usecase "UC1 Digitise Fig.65 glyphs\n(python -m src.digitise_fig65)" as UC1
+  usecase "UC2 Train classifier\n(python src/train.py)" as UC2
+  usecase "UC3 Run full pipeline\n(python run_pipeline.py)" as UC3
+  usecase "UC4 Evaluate only\n(python src/evaluate.py)" as UC4
+  usecase "UC5 Validity audit\n(python -m src.audit_validity)" as UC5
+  usecase "UC6 Open-set sign match\n(python -m src.sign_matcher)" as UC6
+  usecase "UC7 Metric learning\n(python -m src.siamese_embed)" as UC7
+  usecase "UC8 Read results\n(python process_model.py)" as UC8
+  usecase "UC9 Interactive dashboard\n(streamlit run dashboard.py)" as UC9
+  usecase "UC10 Annotate potsherds\n(PotsherdAnnotator)" as UC10
+  usecase "UC11 Tune annotation boxes\n(fullscreen_resizer.py)" as UC11
+  usecase "UC12 EDA / publication plots\n(notebooks/*.ipynb)" as UC12
+
+  usecase "Add a new sign class\n(drop images into a class folder)" as UC13
+  usecase "Change epochs / augmentation\n(INDUS_EPOCHS, INDUS_AUG, INDUS_BATCH)" as UC14
+  usecase "Transfer to Keeladi domain\n(WeightTransfer)" as UC15 <<scaffolded>>
+}
+
+Researcher --> UC1
+Researcher --> UC2
+Researcher --> UC3
+Researcher --> UC4
+Researcher --> UC10
+Researcher --> UC11
+Researcher --> UC13
+Researcher --> UC14
+
+Reviewer --> UC3
+Reviewer --> UC5
+Reviewer --> UC6
+Reviewer --> UC7
+Reviewer --> UC8
+Reviewer --> UC12
+
+UC3 ..> UC5 : <<includes>>
+UC3 ..> UC4 : <<includes>>
+UC3 ..> UC6 : <<includes>>
+UC3 ..> UC10 : <<includes>>
+UC4 ..> UC1 : <<requires>> real glyphs
+UC2 ..> UC1 : <<uses>>
+UC8 ..> UC3 : <<requires>>
+UC9 ..> UC3 : <<requires>>
+UC6 ..> UC4 : <<requires>> segmentation
+UC15 ..> UC2 : <<extends>>
+@enduml

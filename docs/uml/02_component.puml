@@ -1,0 +1,84 @@
+@startuml
+title Figure 2 — Component Diagram
+
+package "Entry points" {
+  [run_pipeline.py\nORCHESTRATOR] as RP
+  [src/train.py] as TR
+  [src/evaluate.py] as EV
+  [src/audit_validity.py] as AV
+  [src/sign_matcher.py] as SM
+  [src/siamese_embed.py] as SE
+  [src/digitise_fig65.py] as DG
+  [process_model.py] as PM
+  [dashboard.py] as DB
+  [cnn_potsherd_annotator.py] as PA
+}
+
+package "Preprocessing" {
+  [ImageNormalizer] as IN
+  [GridDecomposer] as GD
+}
+
+package "Models" {
+  [IndusClassifierCNN] as CNN
+  [WeightTransfer] as WT
+}
+
+package "Analysis" {
+  [InscriptionDecoder] as DEC
+}
+
+component "TensorFlow / Keras" as TF
+component "OpenCV" as CV
+component "scikit-learn" as SK
+component "Matplotlib / Seaborn" as MP
+component "PyMuPDF" as PMU
+component "Streamlit" as SLT
+component "data/lexicon.json" as LEX
+
+RP --> AV
+RP --> EV
+RP --> SM
+RP --> PA
+RP -.writes.-> DB
+
+EV --> DEC
+SM --> DEC
+PM  ..reads..> AV
+DB  ..reads..> RP
+
+TR --> IN
+TR --> CNN
+EV --> IN
+EV --> CNN
+AV --> IN
+SM --> IN
+SE --> CV
+DEC --> IN
+DEC --> LEX
+
+TR --> TF
+EV --> TF
+AV --> TF
+SM --> TF
+SE --> TF
+CNN --> TF
+WT --> TF
+
+IN --> CV
+DEC --> CV
+SM --> CV
+SE --> CV
+GD --> CV
+DG --> PMU
+DG --> CV
+
+EV --> SK
+EV --> MP
+DB --> MP
+AV --> SK
+TR --> SK
+
+DB --> SLT
+PA --> CV
+@enduml

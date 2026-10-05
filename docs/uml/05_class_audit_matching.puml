@@ -1,0 +1,76 @@
+@startuml
+title Figure 5 — Audit, Retrieval & Digitisation
+
+class "audit_validity\n<<module functions>>" as AV {
+  + run_audit(model_path, data_dir, out_dir, n_perm) : dict
+  + leakage_audit(X, y, groups, test_size, thresh, seed) : dict
+  + openset_audit(model, class_names, normalizer, data_dir, n_pos, seed) : dict
+  + verification_audit(model, class_names, normalizer, data_dir, n_perm, seed) : dict
+  + write_report(audit, out_dir) : Path
+  + load_train_corpus(data_dir, class_names, normalizer) : tuple
+  + load_class_names(model_path) : list
+  + load_classifier(model_path) : Model
+  + predict_probs(model, images) : ndarray
+  + expected_classes(folder) : list
+  - _contamination(X, train_idx, val_idx, thresh) : dict
+  - _negative_groups(normalizer, data_dir) : list
+}
+
+class "sign_matcher\n<<module functions>>" as SM {
+  + match_all(model_path, data_dir, n_perm, seed) : dict
+  + write_report(result, out_dir) : Path
+  + binarize(gray) : ndarray
+  + largest_component_mask(binary, size) : ndarray
+  + stroke_coverage(a, b, dilate_iters) : float
+  + embed_model(model) : Model
+  + build_class_references(data_dir, class_names, limit) : dict
+  + prototype_embeddings(embedder, refs) : ndarray
+  + extract_glyphs(decoder, sherd_path) : list
+  + score_sherd(glyphs, embedder, protos, refs, class_names) : dict
+}
+
+class "siamese_embed\n<<module functions>>" as SE {
+  + load_glyphs() : list
+  + fit_canvas(img, size, margin) : ndarray
+  + augment(img, rng) : ndarray
+  + build_dataset(items, per_class, seed) : tuple
+  + build_test(items, seed) : tuple
+  + build_reference(items) : ndarray
+  + make_model() : Model
+  + margin_triplet(emb, labels, margin) : scalar
+  + train(items, epochs, per_class, batch, seed) : Model
+  + retrieval_report(model, items, Xte, yte) : dict
+  + per_class_report(model, items, Xte, yte) : dict
+}
+
+class "digitise_fig65\n<<module functions>>" as DG {
+  + digitise(pdf, out_dir, zoom) : dict
+  + table_rules(page) : tuple
+  + clean_crop(img) : ndarray
+  + contact_sheet(out, cell, cols) : Path
+  + debug_page(pno) : void
+  - _serial_anchors(page, serials) : dict
+  - _words(page) : list
+  - _bracket(values, lo, hi) : tuple
+}
+
+class AuditResult <<value object>>
+class SherdScore <<value object>>
+class "Fig65Glyph\n<<value object>>" as FG
+
+note right of FG
+  serial · nfm · m1977 · p2010
+  is_stroke_sign
+  (from manifest.json)
+end note
+
+AV --> ImageNormalizer : uses
+AV --> FG : reads manifest
+SM --> ImageNormalizer : uses
+SM ..> InscriptionDecoder : segment_inscription()
+SM ..> AuditResult : writes
+SE --> FG : loads
+SE ..> AuditResult : retrieval_report()
+DG ..> FG : produces
+AV ..> AuditResult : produces
+@enduml

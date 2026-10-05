@@ -1,0 +1,31 @@
+@startuml
+title Figure 1 — System Context (C4 Level 1)
+
+actor Researcher as "Archaeologist /\nResearcher"
+actor Reviewer as Reviewer
+
+system "Indus–Keeladi CNN\n(TensorFlow 2.21 / Python 3.11)" as System
+
+database "data/processed/\n(train · val · lexicon)" as Data
+database "models/\n(.keras · classes.txt)" as Models
+folder "docs/*.pdf\n(source publications)" as PDFs
+folder "models/evaluation_results/\n(reports · JSON · PNG)" as Reports
+
+left to right direction
+
+Researcher --> System : digitise glyphs,\ntrain, run pipeline,\nannotate sherds
+Reviewer --> System : re-run audits,\nread reports
+Reviewer --> Reports : verify every number
+
+System --> Data : read images (folder = label)
+System --> PDFs : extract Fig.65 glyphs (PyMuPDF)
+System --> Models : read / write weights
+System --> Reports : write reports (never fabricated)
+
+note right of System
+  Every reported number is computed
+  from the model + images on disk.
+  If data is missing the system
+  STOPS rather than inventing results.
+end note
+@enduml

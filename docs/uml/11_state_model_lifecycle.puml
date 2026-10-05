@@ -1,0 +1,70 @@
+@startuml
+title Figure 11 — State: Trained Model Lifecycle
+
+[*] --> Untrained : repo clone
+
+state Untrained {
+  [*] --> waiting
+  waiting : no .keras on disk
+}
+
+Untrained --> Digitising : python -m src.digitise_fig65
+state Digitising {
+  [*] --> rendering
+  rendering : render Fig.65 at 6x\ncrop cells, clean rules
+  rendering --> written : 39 glyphs + manifest.json
+  written : fig65_real/*.png
+}
+Digitising --> Untrained
+
+Untrained --> Training : python src/train.py
+state Training {
+  [*] --> splitting
+  splitting : split originals (leakage_controlled)
+  splitting --> augmenting : train split only
+  augmenting --> fitting
+  fitting : Adam 1e-3 + EarlyStopping\n+ ReduceLROnPlateau
+  fitting --> saved
+  saved : indus_classifier.keras + classes.txt
+}
+Training --> Trained
+
+state Trained {
+  [*] --> ready
+  ready : runnable by evaluate / audit / matcher
+}
+
+Trained --> Evaluating : python run_pipeline.py
+state Evaluating {
+  [*] --> auditing
+  auditing : leakage, open-set, verification
+  auditing --> scoring
+  scoring : predict_keeladi_matches(threshold=0.5)
+  scoring --> matching
+  matching : sign_matcher.match_all()
+  matching --> reported
+  reported : reports + JSON + PNGs written
+}
+Evaluating --> Reported
+
+state Reported {
+  [*] --> available
+  available : process_model.py reads it\ndashboard.py displays it
+}
+
+Reported --> Evaluating : re-run after new data
+
+note right of Evaluating
+  If the model is missing the pipeline
+  exits with an error instead of
+  generating placeholder metrics.
+end note
+
+state "Rejected" as Rejected
+note left of Rejected
+  A prediction landing on a zz_*
+  class is reported as REJECT,
+  never as a match.
+end note
+Evaluating --> Rejected : top-1 == zz_*
+@enduml

@@ -1,0 +1,58 @@
+@startuml
+title Figure 6 — Sequence: run_pipeline.main()
+
+actor User
+participant RP as run_pipeline.main()
+participant FS as "filesystem (PROJECT_ROOT)"
+participant AV as src.audit_validity
+participant EV as src.evaluate.KeeladiEvaluator
+participant DEC as src.decoding.InscriptionDecoder
+participant SM as src.sign_matcher
+participant PA as cnn_potsherd_annotator
+
+== Honesty gate ==
+User -> RP : python run_pipeline.py
+RP -> FS : MODEL_PATH.exists()?
+alt model missing
+  RP --> User : log.error + sys.exit(1)
+  note right of RP: Refuses to fake results.
+else model present
+  == [1/6] Scan data ==
+  RP -> FS : scan_data()
+  FS --> RP : counts dict
+
+  == [2/6] Validity audit ==
+  RP -> AV : run_audit(model, data, EVAL_DIR)
+  AV -> AV : leakage_audit(...)
+  AV -> AV : openset_audit(...)
+  AV -> AV : verification_audit(n_perm=2000)
+  AV -> FS : validity_audit.json + _report.txt
+  AV --> RP : audit dict
+
+  == [3/6] Keeladi evaluation ==
+  RP -> EV : KeeladiEvaluator(MODEL_PATH, DATA_DIR)
+  EV -> EV : load_keeladi_validation_set()
+  EV -> EV : predict_keeladi_matches(threshold=0.5)
+  EV -> EV : analyze_civilization_link(predictions)
+  EV -> FS : keeladi_evaluation_report.txt + PNGs
+  EV -> DEC : run_decoding(EVAL_DIR)  [optional]
+  DEC -> FS : decoded/decoded_readings.txt
+EV --> RP : (predictions, analysis)
+
+  == [4/6] Open-set sign matching ==
+  RP -> SM : match_all(n_perm=2000)
+  SM -> SM : segment, embed, stroke coverage
+  SM -> SM : permutation test
+  SM -> FS : sign_match_report.txt / .json
+  SM --> RP : result
+
+  == [5/6] Dashboard predictions ==
+  RP -> FS : keeladi_predictions.json
+
+  == [6/6] Annotate potsherds ==
+  RP -> PA : PotsherdAnnotator(...).annotate_all()  [optional]
+  PA --> RP : annotated images
+
+  RP --> User : "PIPELINE COMPLETE" + paths + caveat
+end
+@enduml

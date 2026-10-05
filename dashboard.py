@@ -49,13 +49,32 @@ def get_images_in_folder(folder_path):
 
 @st.cache_data
 def load_model_metrics():
-    """Load model performance metrics."""
-    return {
-        "accuracy": 0.92,
-        "precision": 0.89,
-        "recall": 0.91,
-        "f1_score": 0.90,
-    }
+    """
+    Load REAL model metrics from the model-derived audit.
+
+    Previously this returned hard-coded numbers (accuracy 0.92, precision 0.89,
+    ...).  It now returns the genuine audit output, or ``None`` when no real
+    result exists yet, so the UI can say "run the pipeline" instead of showing
+    invented values.
+    """
+    audit_path = EVAL_DIR / "validity_audit.json"
+    if audit_path.exists():
+        try:
+            a = json.loads(audit_path.read_text(encoding="utf-8"))
+            va = a.get("verification_audit", {})
+            lk = a.get("leakage_audit", {}).get("protocol_random_split", {})
+            return {
+                "source": "validity_audit.json (model-derived)",
+                "n_classes": a.get("n_classes"),
+                "n_train_images": a.get("n_train_images"),
+                "known_pair_top1_correct": va.get("n_top1_correct"),
+                "known_pair_total": va.get("n_pairs"),
+                "verification_p_value": va.get("permutation_p_value"),
+                "leakage_val_near_duplicate_pct": lk.get("pct_val_with_near_duplicate"),
+            }
+        except Exception:
+            pass
+    return None
 
 
 @st.cache_data
@@ -76,15 +95,26 @@ def render_statistics_section():
     st.header("📊 Statistics & Visualizations")
     st.markdown("**Overall CNN model performance metrics with real Indus sign samples.**")
     
-    # Performance Metrics
+    # Performance Metrics (REAL - from the model-derived audit; never fabricated)
     st.subheader("1.1 Model Performance Metrics")
     metrics = load_model_metrics()
-    
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Accuracy", f"{metrics['accuracy']:.2%}")
-    col2.metric("Precision", f"{metrics['precision']:.2%}")
-    col3.metric("Recall", f"{metrics['recall']:.2%}")
-    col4.metric("F1-Score", f"{metrics['f1_score']:.2%}")
+
+    if metrics is None:
+        st.warning("No model-derived metrics found. Run `python run_pipeline.py` "
+                   "to compute them. (This dashboard no longer shows invented numbers.)")
+    else:
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Trained classes", metrics.get("n_classes"))
+        col2.metric("Training images", metrics.get("n_train_images"))
+        kp = f"{metrics.get('known_pair_top1_correct')}/{metrics.get('known_pair_total')}"
+        col3.metric("Hand-picked pairs correct (top-1)", kp)
+        col4.metric("Verification p-value", metrics.get("verification_p_value"))
+        st.caption(
+            f"Source: {metrics.get('source')}. Leakage check: "
+            f"{metrics.get('leakage_val_near_duplicate_pct'):.2f}% of validation images have "
+            f"a near-duplicate in train under the old random split."
+            if metrics.get("leakage_val_near_duplicate_pct") is not None else
+            f"Source: {metrics.get('source')}.")
     
     st.markdown("---")
     
@@ -154,32 +184,22 @@ def render_sign_matching_section():
     # Main Comparison: Selected Keeladi vs Indus Reference
     st.subheader("2.3 Detailed Comparison: Selected Keeladi vs Indus Sign Reference")
     
-    # Load known pair score for selected match
-    match_pct = 85.0
-    confidence = 0.80
-    
-    scores_path = EVAL_DIR / "known_pair_scores.json"
-    if scores_path.exists():
+    # Load the REAL model verdict for this sherd (no hard-coded fallback).
+    match_pct = None
+    confidence = None
+    top1_class = None
+    preds_path = EVAL_DIR / "keeladi_predictions.json"
+    if preds_path.exists():
         try:
-            with open(scores_path, 'r') as f:
-                scores_data = json.load(f)
-                for item in scores_data:
-                    # check if the selected_match ID is in the class or indus or keeladi field
-                    cls_val = item.get("class", "")
-                    indus_val = item.get("indus", "")
-                    keeladi_val = item.get("keeladi", "")
-                    if (f"P{selected_match}" in cls_val or 
-                        f"P{selected_match}" in indus_val or 
-                        str(selected_match) in keeladi_val or 
-                        str(selected_match) in indus_val):
-                        match_pct = item.get("match_pct", match_pct)
-                        confidence = item.get("confidence", confidence)
-                        if confidence <= 1.0:
-                            confidence = confidence * 100.0
-                        break
+            pdata = json.loads(preds_path.read_text(encoding="utf-8"))
+            rows = pdata.get("per_sherd", {}).get(f"match_Indus_{selected_match}", [])
+            if rows:
+                top1_class = rows[0]["top3_classes"][0]
+                confidence = float(rows[0]["top3_probs"][0])
+                match_pct = confidence * 100.0
         except Exception as e:
-            pass
-            
+            st.warning(f"Could not read real predictions: {e}")
+
     col_keel, col_metrics, col_indus = st.columns([1, 1, 1])
     
     with col_keel:
@@ -190,23 +210,24 @@ def render_sign_matching_section():
             
     with col_metrics:
         st.markdown("<div style='text-align: center; margin-top: 10px;'>", unsafe_allow_html=True)
-        st.markdown("### 🧬 CNN Match Verdict")
-        
-        # Display match percentage and confidence
-        st.metric("Shape Match Percentage", f"{match_pct:.1f}%")
-        st.metric("CNN Classification Confidence", f"{confidence:.1f}%")
-        
-        # Add visual progress bar
-        st.progress(float(match_pct) / 100.0)
-        
-        # Verdict text
-        if match_pct >= 85.0:
-            st.success("🟢 Strong Shape Agreement")
-        elif match_pct >= 75.0:
-            st.warning("🟡 Medium Shape Agreement")
+        st.markdown("### 🧬 CNN Model Verdict")
+
+        if confidence is None:
+            st.info("No model-derived prediction for this sherd yet.\n"
+                    "Run `python run_pipeline.py`.")
         else:
-            st.error("🔴 Low Shape Agreement")
-            
+            st.metric("Top-1 Model Confidence", f"{confidence * 100:.1f}%")
+            st.metric("Model's Top-1 Sign", top1_class)
+            st.progress(min(max(float(confidence), 0.0), 1.0))
+            st.caption("This is the model's top-1 softmax for the sherd. It is a "
+                       "VISUAL similarity score, not a verified archaeological match.")
+            if confidence >= 0.8:
+                st.success("🟢 High-confidence model prediction")
+            elif confidence >= 0.5:
+                st.warning("🟡 Medium-confidence model prediction")
+            else:
+                st.error("🔴 Low-confidence model prediction")
+
         st.markdown("</div>", unsafe_allow_html=True)
     
     with col_indus:
@@ -242,40 +263,23 @@ def render_sign_matching_section():
     # Top-5 Predictions with Visualization
     st.subheader("2.5 Top-5 CNN Predictions for Selected Sample")
     
-    # Map predictions based on the selected match (derived from real classifier output)
-    predictions_map = {
-        225: [
-            ("sign_25_P225_Cross", 0.802),
-            ("sign_32_P296", 0.071),
-            ("sign_27_P266", 0.052),
-            ("sign_19_P192", 0.043),
-            ("sign_36_P341_Leaf", 0.032),
-        ],
-        307: [
-            ("sign_41_P307", 0.849),
-            ("sign_30_P285", 0.058),
-            ("sign_15_P145", 0.042),
-            ("sign_22_P214", 0.031),
-            ("sign_10_P128", 0.020),
-        ],
-        318: [
-            ("sign_42_P318", 0.912),
-            ("sign_42_P318b", 0.044),
-            ("sign_29_P278", 0.021),
-            ("sign_09_P127", 0.013),
-            ("sign_12_P130", 0.010),
-        ],
-        365: [
-            ("sign_43_P365", 0.835),
-            ("sign_35_P341_Oval", 0.075),
-            ("sign_06_P91", 0.048),
-            ("sign_20_P198", 0.030),
-            ("sign_14_P133", 0.012),
-        ],
-    }
+    # Top-5 predictions loaded from REAL model output (keeladi_predictions.json).
+    # This table used to be hard-coded; it is now read from the evaluator output.
+    predictions = []
+    _preds_path = EVAL_DIR / "keeladi_predictions.json"
+    if _preds_path.exists():
+        try:
+            _pdata = json.loads(_preds_path.read_text(encoding="utf-8"))
+            _rows = _pdata.get("per_sherd", {}).get(f"match_Indus_{selected_match}", [])
+            if _rows:
+                predictions = list(zip(_rows[0]["top3_classes"], _rows[0]["top3_probs"]))
+        except Exception as _e:
+            st.warning(f"Could not read real predictions: {_e}")
     
-    predictions = predictions_map.get(selected_match, predictions_map[225])
+    # (predictions loaded above from keeladi_predictions.json - model output)
     
+    if not predictions:
+        st.info("No model-derived predictions available yet. Run `python run_pipeline.py`.")
     col_pred, col_chart = st.columns([1, 1.5])
     
     with col_pred:

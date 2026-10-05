@@ -1,0 +1,71 @@
+@startuml
+title Figure 3 — Preprocessing & Model Classes
+
+class ImageNormalizer {
+  - target_size : tuple
+  - autocrop : bool
+  - deskew : bool
+  - morph_clean : bool
+  + process_image(path, apply_threshold) : ndarray
+  + process_array(arr, apply_threshold) : ndarray
+  + process_directory(in_dir, out_dir) : int
+  - load_image(path) : ndarray
+  - convert_to_grayscale(img) : ndarray
+  - _normalize_polarity(gray) : ndarray
+  - _denoise(gray) : ndarray
+  - _autocrop_to_glyph(gray) : ndarray
+  - _deskew(gray) : ndarray
+  - resize_image(img) : ndarray
+  - normalize_pixel_values(img) : ndarray
+  + apply_threshold(img, threshold) : ndarray
+}
+
+class GridDecomposer {
+  - grid_rows : int
+  - grid_cols : int
+  + decompose_image(img) : list
+  + analyze_grid_presence(cells, threshold) : ndarray
+  + extract_features_from_grid(cells) : list
+  + visualize_grid(img, presence, path) : ndarray
+  - _calculate_horizontal_symmetry(cell) : float
+  - _calculate_vertical_symmetry(cell) : float
+}
+
+class IndusClassifierCNN {
+  - input_shape : tuple
+  - num_classes : int
+  - model : keras.Model
+  + build_model() : Model
+  + build_multi_head_model() : Model
+  + train(X, y, X_val, y_val, epochs, batch_size) : History
+  + predict(X) : ndarray
+  + save_model(path) : void
+  + load_model(path) : void
+  + get_model_summary() : void
+}
+
+class WeightTransfer {
+  - source_model : Model
+  - target_model : Model
+  + transfer_convolutional_layers() : int
+  + freeze_early_layers(n) : void
+  + unfreeze_all_layers() : void
+  + progressive_unfreezing(epoch, total, schedule) : void
+  + adapt_learning_rate(base_lr, factor) : Optimizer
+  + domain_adaptation_training(X, y, epochs, batch_size) : History
+  + evaluate_domain_gap(X_indus, X_keeladi) : dict
+}
+
+class "NormalizedGlyph\n<<value object>>" as NG
+
+note right of NG
+  64 x 64 x 1 float32 array
+  glyph BRIGHT on dark background
+  values in [0, 1]
+end note
+
+ImageNormalizer ..> NG : produces
+IndusClassifierCNN ..> NG : consumes
+GridDecomposer ..> NG : decomposes (not wired to CNN)
+WeightTransfer ..> IndusClassifierCNN : copies Conv2D weights
+@enduml

@@ -1,0 +1,1113 @@
+
+
+===== PAGE 1 =====
+1 | P a g e 
+ 
+THE INDUS SCRIPT 
+Recognition as an alphabet 
+ 
+ 
+Abstract:  
+This paper introduces a ground -breaking approach to deciphering the Indus script, 
+employed by the Indus Valley Civilization (IVC) from c. 3300 to 1900 BCE. Moving beyond 
+previous methods, my research delves into the intricate structure of the script's signs, aiming 
+to definitively settle the debate regarding its categorization. Specifically, I investigate whether 
+the Indus script functions as an alphabet, presenting compelling evidence for the  number of 
+primary signs it comprises. 
+  
+My methodology meticulously examines over 400 signs, encompassing the entire 
+corpus rather than relying on limited samples. This holistic approach utilizes a novel grid-based 
+decomposition technique to visually dissect compound signs, identify diacritics with consistent 
+usage patterns, and uncover the underlying principles of sign extraction. Through this rigorous 
+analysis, I successfully isolate the essential primary signs and illuminate their potential 
+phonetic representations within an alphabetic system. 
+  
+However, I acknowledge the intricate variations in writing styles present across the 
+Indus corpus. These stylistic subtleties, encompassing formation, composition, and 
+combination strategies, contribute to the apparent plurality of signs. Nonetheless, my findings 
+reveal a core set of only 40 fundamental signs, suggesting a remarkably concise system beneath 
+the surface complexity. 
+  
+By presenting this new paradigm for understanding the Indus script, I pave the way for 
+further advances in its decipherment. Continued exploration of the identified core signs and 
+their phonetic associations holds immense potential for unlocking the lingui stic insights 
+encoded within this enigmatic script, shedding light on a crucial chapter in human history. 
+ 
+Keywords: Indus script, ancient scripts, undeciphered scripts, Indus alphabet, classification of 
+Indus signs, Archaic alphabetic scripts.  
+Introduction: 
+a) The nature of the Indus Script and the unsuccessful attempts of decipherment  
+Numerous claims of decipherment have been made regarding the Indus writing system, 
+leading scholars from around the world to conduct extensive examinations. Posselh provides a 
+historical perspective on these scholarly endeavors and presents a comprehensive account of 
+the contributions made by researchers from diverse regions. His assessments demonstrate a 
+balanced approach, refraining from endorsing any decipherment claim unequivocally due to 
+the lack of conclusive evidence (Pos selh,1996). The claims of decipherments pertaining to 
+ancient scripts have persisted consistently over time, extending into the present day. Notably, 
+numerous assertions have been published subsequent to 1996, each offering novel perspectives 
+in the field of research. There is included much contribution from India. 
+
+===== PAGE 2 =====
+2 | P a g e 
+ 
+Smith and Gadd were the first to note that the Indus signs, like other early scripts, have a 
+pictographic nature (Smith & Gadd, 1931). Gadd acknowledges that it is unlikely to be a purely 
+visual form of writing He is of the opinion about the nature of the script that it is not an alphabet 
+must be obvious from the number of its signs, the signs are probably syllabic with the admixture 
+of some ideograms and perhaps determinatives; in short that the system is perhap s not very 
+much from that of the cuneiform writing (Gadd, 1931; Wheeler, 1968). The general conclusion 
+is that the collection of strokes though obviously containing a certain number of units are not 
+used in numerical sense but most probably with the phonetic value ( Gadd, 1931 ). Hunter 
+analysis meticulously of the signs and their structure and gave a considerate reasoning about 
+the Indus script (Hunter,1934). Ross, Lal, and Wilson have also conducted the analysis, 
+focusing on the examination of numerical signs (Ross,1933; Wilson, 1974) Lal presenting a 
+strong argument regarding the direction of the writing (Lal, 1966) . Langdon's suggestion, 
+proposing that the Brahmi script could have possibly originated from the Indus writing and is 
+independent of any connection to Sumerian writing, carries considerable scholarly importance. 
+His proposition goes on to conjecture that this script might have evolved into a purely syllabic 
+form, leading to the assumption that the language it represented could be Sanskrit  (Langdon, 
+1931). The team, under the leadership of computer scientist Rajesh Rao, has made remarkable 
+strides in advancing the study of the Indus script through their pioneering digital approach. 
+Their collective and individual efforts have played a crucial role in various  analytical aspects, 
+including the examination of sign designs, entropy analysis, typology studies, and a more 
+profound comprehension of allographic variations and their distribution within the script. (Rao, 
+et.al; Yadav 2009-10-11).  
+Despite the varying perspectives among researchers, the consensus widely acknowledges 
+that the Indus script encompasses an abundance of signs that do not conform to the 
+characteristics of either an alphabet or a syllabary. Instead, it is deemed more plausible that the 
+script is of a logo -syllabic nature, akin to the writing systems found in Sumerian or Egyptian 
+civilizations. This implies that the Indus script incorporates a substantial number of logographic 
+signs that represent entire wor ds or conceptual notions, alongside a smaller subset of signs 
+representing syllabic elements. 
+In terms of the language that the script may represent, the preponderance of evidence leans 
+towards the likelihood of a proto -Dravidian language rather than Sanskrit. While numerous 
+scholars have proposed Dravidian interpretations for specific groups of characters based on 
+Old Tamil, none of these pr oposed translations has attained universal acceptance within the 
+scholarly community. Thus, the linguistic underpinnings of the Indus script continue to be a 
+subject of ongoing investigation and debate among researchers. 
+Sir John Marshall was the pioneering figure who put forth the notion that the Indus 
+Civilization belonged to a non -Aryan cultural milieu and postulated that its language likely 
+pertained to the Dravidian family (Marshall, 1924). Heras describes the Indus script as a 'Picto-
+phonographic' writing system, wherein the signs are not simply representations of syllables or 
+consonant sounds, but rather, they express complete words.  He believed in the possibility of 
+reconstructing Proto-Dravidian by conducting a comparative analysis of its surviving daughter 
+languages. By examining and comparing these descendant languages, he aimed to trace back 
+their common ancestral form, Proto-Dravidian (Heras, 1953). 
+
+===== PAGE 3 =====
+3 | P a g e 
+ 
+Fairservis has not only provided detailed general assumptions and principles related to 
+decoding the Indus script but has also made efforts to propose specific interpretations from a 
+Dravidian perspective. His endeavors are marked by an overly speculative analysis of 
+pictograms, often stretching interpretations beyond plausible bounds  (Fairservis, 1983). 
+Parpola, in his proposed readings, presents a range of interpretations, encompassing both 
+phonetic and logographic possibilities. He bases these interpretations on the constructed proto-
+Dravidian words that can be linked to the presumed iconic value of the written s ymbols. By 
+analyzing the potential connections between the script and proto -Dravidian language, He 
+endeavors to shed light on the underlying meaning and phonetic aspects of the Indus script  
+(Parpola, 1994).  
+The scholar places particular emphasis on the pictorial significance of the Indus signs 
+and endeavors to derive insights for their interpretation from the symbolic applications of the 
+depicted objects in subsequent Indian traditions, particularly in connection to the official titles 
+held by different ruling dynasties. (Mahadevan, 1988). Wells staunchly advocates for the idea 
+that the Indus script constitutes a sophisticated and fully developed writing system of a 
+logographic nature. He asserts that the script primarily employs logograms, which are symbols 
+representing complete words or concepts, indicating a high level of complexity in its structure 
+and function. Furthermore, Wells shows a preference for the proto -Dravidian hypothesis, 
+positing that the language underlying the script likely belongs to the proto-Dravidian linguistic 
+family. (Wells, 2015). The Russians posited that the Indus script belongs to the logo -syllabic 
+category, as opposed to being purely syllabic or alphabetic. To substantiate their claim, they 
+conducted a statistical computer analysis of sign occurrences within a representative selection 
+of Indus texts. Drawing an analogy with the methods used in analyzing ancient Egyptian 
+material, they inferred those signs appearing frequently likely served as grammatical markers, 
+while signs with lower frequencies represented root morphemes, similar to the pattern observed 
+in Egyptian writing.  The Soviet scholars identified the Indus language as belonging to the 
+Dravidian family on the basis of this structural analysis (Zvelebil, et.al, 1970). 
+  Waddell identified Indus signs that resembled Sumerian signs, then proceeded to 
+decipher the inscriptions by substituting the phonetic values of the Sumerian signs. Waddell 
+held the opinion that there existed a similarity and closeness between the Sumerian and Sanskrit 
+languages. (Waddell, 1976). Hrozny attempted to decipher with the Hittite Hieroglyph  and 
+involved assuming that individual signs often carried multiple phonetic and semantic 
+meanings, and that different signs might have identical meanings  (Hrozny, 1939).  Pran Nath 
+proposed that the Indus script went through distinct stages of development. Initially, it may 
+have employed pictographs or ideographs, representing visual representations of objects or 
+ideas. As time progressed, the script could have evolved into a more abstract form, resembling 
+letters or characters , according to Nath's hypothesis, the script eventually reached a more 
+standardized and conventionalized stage, resembling the Brahmi script. Nath explored the 
+possibility of it being associated with the Sanskrit language. (Nāth, 1931) . and Sankalia 
+attempted to seek solution in Sanskrit (Sankalia, 1978) and Sankaranand's approach to reading 
+the Indus script involved employing tantric rules and principles. By applying the esoteric 
+knowledge and methods inherent in tantric traditions, he sought to decipher the script and 
+unlock its hidden meanings  (Sankarananda,1944). Piccoli has attempted decipherment by 
+comparing the Etruscan and Indus signs (Piccoli, 1933) . V on present the possibility to show 
+resemblance with the signs of Easter Island. (V on, 1931)   
+
+===== PAGE 4 =====
+4 | P a g e 
+ 
+Rao deciphered the script as an alphabet and read the Indus text in proto-Sanskrit (Rao, 
+1982), and Kak also supports the possibility of it being alphabetic (Kak, 1994). The possibility 
+that All the Indus texts exclusively consist of sequences of numbers (Subbarayappa, 1997) even 
+in some scholarly walks the script has not been accepted as a writing system and Indus 
+civilization as a literate civilization. (Witzel et.al, 2004). 
+The classification of the Indus script has been a matter of profound debate within 
+scholarly circles. A pivotal factor influencing various perspectives revolves around the 
+determination of the total number of signs present in the Indus script. This complexity poses a 
+paradox for understanding the writing system of the Indus Valley civilization. Interestingly, 
+despite the existence of a considerable number of compound signs, scant attention has been 
+paid to the possibility of considering it as an alphabet am ong scholars. This lack of attention 
+may be attributed to well -established premises regarding the evolution of epigraphy and the 
+origin of the people inhabiting the Indus Valley. 
+Contrary to common misconceptions, the Indus script is neither pictographic nor 
+logographic, nor does it fit the characteristics of a syllabary. Instead, it represents a unique 
+alphabetic writing system, featuring a diverse array of vowels, semi -vowels, and an extensive 
+list of consonants. In fact, it stands as the earliest known instance of an alphabet in recorded 
+history. Its deceptive logographic appearance may have contributed to the oversight of its 
+alphabetic nature. However, had the availability of p aper or other frequent writing mediums 
+been present, it is plausible that the signs' design and allographs could have been more flexible 
+and adapted to the specific medium of writing. Thus, the circumstances of the time might have 
+hindered the earlier adoption of such a writing style. 
+The concept of a decipherment, as noted by Iravatham Mahadevan, often relies on the 
+self-evident nature of the process. In a successfully deciphered syllabic or alphabetic script, 
+interlocking phonetic elements should provide clear evidence of the system's  functionality 
+(Mahadevan, I.,1981) 
+b) Why and how is the Indus Script an Alphabet? 
+By decomposing compound signs, modifiers, and potential diacritical marks, we can 
+isolate single basic signs from ligatures. This process allows us to identify the actual number 
+of primary or basic signs, providing reasonable evidence supporting an alphabetic system. 
+Determining the accurate number of primary signs in the Indus script has long been a 
+challenge, yet it is crucial for unlocking a deeper understanding of this ancient writing system. 
+A significant aspect of this research involves decomposing signs to ident ify and isolate 
+fundamental or primary signs, enabling us to examine how their combinations result in new 
+designs or formats. 
+In a study conducted by Yadav et al. (2010), Indus signs were categorized into basic 
+signs (154), provisional basic signs (10), and modifiers (21). Wells, in his extensive collection, 
+classifies signs into different categories: simple signs totaling 127, complex signs totaling 175, 
+compound signs totaling 135, and 146 signs marked with additional markings, along with 18 
+sets of markings (Wells, 1998). Conversely, Mahadevan categorizes the signs into ideograms, 
+phonograms, conventional signs, numeral signs, and phonetic signs (Mahadevan, 1989), while 
+Fairservis categorizes them into different groups: some from ancient origins, some from local 
+
+===== PAGE 5 =====
+5 | P a g e 
+ 
+origins, compounds derived from the same local origin, and rare affixes (Fairservis, 1992). 
+Rao's conclusion suggests the existence of only 62 signs and proposes the evolution of graphic 
+variants, a perspective not shared by Mahadevan (Rao, 1982). The vary ing concepts of what 
+constitutes a basic sign have led to different counts of Indus basic signs by different scholars, 
+but this particular study identifies only 40 basic signs. 
+In the Indus writing system, primary or fundamental signs are commonly and 
+independently utilized, while the remaining signs are compounds that can be broken down 
+based on the typology of their allographs. Typically, compound signs consist of two or three 
+composite signs, although some instances may be considered illegible. By decomposing these 
+compound signs, a significant number of primary signs or basic phonemes can be identified. 
+This observation supports the notion of considering the Indus writing system as alphabetic. 
+DATA SOURCES 
+1. Corpus of Indus Seals and Inscriptions. 1: Collections in India, edited by Jagat Pati 
+Joshi and Asko Parpola, 1987. 2: Collections in Pakistan, edited by Sayid Ghulam 
+Mustafa Shah and Asko Parpola, 1991. 
+2. Mahadevan, I. (1977), The Indus Script: Texts, Concordance and Tables, Memoirs of 
+the Archaeological Survey of India 
+3. Wells, B. K. (2015).  The archaeology and epigraphy of Indus writing. Archaeopress 
+Publishing Ltd. 
+4. Muhammad, Mahaveer H. "THE INDUS SCRIPT AS AN ALPHABET Examining 
+Conformity in the Usage of the Indus Script." (2024).  
+https://doi.org/10.20944/preprints202408.1473.v1  
+5. NFM- Indus Script Font  
+ 
+METHODOLOGY 
+The process of isolating basic signs involves using a grid structural methodology to 
+visually recognize and separate individual components within compound structures. This 
+approach allows us to identify and distinguish basic signs from complex ligatures. By 
+employing visual recognition techniques, we can isolate m odifiers, diacritic marks, and 
+composite signs within the modified signs, enabling analysis of their specific characteristics 
+and contributions to the overall allography. Decomposing these elements provides insights into 
+their function, phonetic value, reading, and meaning, enhancing our understanding of the Indus 
+script's writing styles and complexity. Further details on isolating basic signs are provided in 
+the following section. 
+Figure: 01  
+
+===== PAGE 6 =====
+6 | P a g e 
+ 
+ 
+ 
+Compound Signs 
+1.1 Compositing Primary Signs in Compound Signs (Ligatures) 
+Currently, 90 compound signs have been identified, though this count may increase 
+with further research. These compound signs are formed by combining two or more basic or 
+primary signs into composite forms. The process of compositing involves merging individual 
+phonemes to create a un ified unit. Ligatures serve various purposes, such as enhancing 
+aesthetics, improving readability, and efficiently representing frequently occurring 
+combinations of allographs. 
+Within the compound signs, compositing brings together phonemes, the smallest 
+meaningful units in the Indus writing system. This amalgamation can take different forms, such 
+as merging allographic shapes or combining constituent parts. By integrating these 
+components, compound signs establish a harmonious connection between the allographic 
+variations of basic phonemes, resulting in a visually cohesive written representation. Notably, 
+the process of combining elements within the Indus script has resulted in approximately 400 
+signs, many undergoing modifications similar to those observed in Brahmi (Kak, 1994). 
+The decomposition of compound signs has been conducted meticulously. It is crucial 
+to recognize that compound signs should not be viewed as merely compressed versions of 
+individual basic signs in the Indus texts. This is due to the infrequent occurrence of constituent 
+basic signs appearing as sign sequences. Even when components of a compound sign do appear 
+in certain combinations, the context of their use differs significantly (Yadav et al., 2010). 
+Through careful observa tion and examination, the basic or primary signs have been isolated 
+and identified. 
+ 
+ 
+
+
+===== PAGE 7 =====
+7 | P a g e 
+ 
+Figure: 02 
+ 
+Figure: 03 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 8 =====
+8 | P a g e 
+ 
+Figure: 04 These signs are discussed well in the topic logographic sign Pati. (Muhammad, 
+2023) 
+1. 
+  (P-01) 2. 
+  (P-03) 3. 
+  (P-04) 4. 
+  (P-05) 
+Excluding the sign P-05 that has used only one time in the texts, the usage of the rest 
+three signs with the same signs indicates the possibility of having the same value despite 
+having some allographic variation: 
+ 
+Figure: 05 
+2076 (00) 
+   4479 (10) 
+   8013 (00) 
+  
+  1045 (00) 
+  
+   
+2371 (00) 
+   6209 (00) 
+   6225 (00) 
+  
+   4029 (00) 
+  
+   
+1.2 Three permanent Modifiers  
+Examination of the Indus Writing System reveals a system of three distinct modifiers 
+employed with base signs. These modifiers demonstrably alter the phonetic value associated 
+with a base sign, expanding the inventory of phonemic distinctions. Each modifie r exhibits 
+consistent application patterns, yet these patterns vary across different base signs, influencing 
+the resulting allographic form. This observation suggests a structured approach to sign 
+modification within the system. 
+Figure: 06 
+ 
+ 
+ 
+
+
+===== PAGE 9 =====
+9 | P a g e 
+ 
+1.3 The wedge type sign 
+The frequent presence of a distinctive "wedge" sign merits further investigation. While 
+limited to only nineteen characters, it exhibits consistent usage across diverse base signs , 
+defying a strict applying rule. This suggests a potential role in modifying phonetic values across 
+the alphabet. The wedge sign primarily associates with the main sign, typically positioned at 
+the top (e.g., 
+  
+  
+  
+  
+  
+ ). However, variations exist based on the underlying sign's design 
+(e.g., 
+  
+  
+  
+  
+  
+  
+ ).  
+Figure: 07 
+ 
+ 
+1.4 Double Horizontal and Quadruple Diagonal Modifiers  
+The usage of two equal signs or the double use of the sign P -127 as a modifier can be 
+observed with signs P-(74, 172, 311, and 288). Furthermore, there are four inclined stroke signs 
+that may function as modifiers and can be seen in association w ith 18 different basic, modify 
+the combined or two independent single signs, such as the sign 
+ , 
+ , 
+  and 
+  . Upon careful 
+analysis, it becomes apparent that the inscriber or engraver occasionally attempted to combine 
+both the two equal signs and the four inclined strokes into a double inclined modifier sign. For 
+instance, the sign P-172 was merged into P-157, albeit with one stroke missing. This practice 
+can also be observed in other signs, including P-92 or P-351. It appears that the two equal signs 
+modify the value, while the inclined signs may serve different functions, as indicated by their 
+simultaneous usage on the two basic signs. These observations suggest that such modifications 
+do not necessarily alter the significance or value of the individual primary signs. 
+The independent form of the inclined sign can be represented by the signs W -14 and 
+M-105, while its singular form is denoted by W -12 and M -101. The application of the two 
+equal signs as a modifier appears to be a common practice to modify the primary sign, as seen 
+in the example 
+  
+ . However, when attempting to use both the equal signs and inclined 
+
+
+===== PAGE 10 =====
+10 | P a g e 
+ 
+signs simultaneously, the engraver deviates from the typical implied approach of the sign, 
+resulting in variations such as 
+  
+  
+  
+ . Nonetheless, the general concept of the design is 
+maintained. 
+Figure: 08 
+ 
+1.5 The horizontal and vertical lining or shedding 
+The observational analysis of the basic signs suggests that both shedding techniques 
+may serve different functions in terms of adding phonetic variations. However, it is important 
+to note that this discussion is not directly relevant to the purpose of clas sification or 
+decomposition. As a result, the signs with both horizontal and vertical elements are presented 
+together in the same table, regardless of their potential phonetic differences. IIII or ≣ : The 
+vertical and horizontal shedding may have different functions as according to the general 
+behavior in the usage in the texts but sometimes the engraver drops the strictness; 
+  
+  
+Figure: 09 
+ 
+
+
+===== PAGE 11 =====
+11 | P a g e 
+ 
+The Vowels System in the Indus Script 
+ 2.1 Diacritics and Primary Signs 
+Analysis reveals eight distinct diacritics potentially influencing the vocalic repertoire 
+of the Indus script. These diacritics likely served a phonemic function, similar to vowel 
+markings used in various ancient and modern writing systems. Additionally, the script appears 
+to possess three distinct primary signs potentially representing the vowel "a." The identification 
+of these signs is based on their resemblance to known vowel markers from other writing 
+systems. 
+Figure: 10 
+ 
+2.2 Dual Functionality of Indus Vowel Signs 
+The Indus script's vowel signs exhibit remarkable versatility. Beyond functioning as 
+independent phonetic entities. 
+Figure: 11 
+ 
+These symbols also possess the ability to modify the phonetic values of other primary 
+signs, or graphemes. This suggests a potentially complex interplay between vowels and 
+consonants within the writing system. 
+ 
+ 
+ 
+
+
+===== PAGE 12 =====
+12 | P a g e 
+ 
+Figure: 12 
+ 
+Figure: 13 
+ 
+Figure: 14 
+ 
+Beyond three core vowel signs, the Indus script employs a consistent repertoire of diacritics 
+modifying both vowels and consonant graphemes, suggesting a rich vocalic system. 
+
+
+===== PAGE 13 =====
+13 | P a g e 
+ 
+Figure: 15 
+ 
+From the diacritical marks list, the signs P -128-129-175-173 are also used as 
+independent graphemic characters. Supposed signs are implied as a modifier but not used as 
+independent graphemes.          
+ The sign P-147/M-86/W-31 has been used independently, indicating its separate value 
+as a vowel. 
+Figure: 16 
+ 
+and consistently modifying other consonantal graphemes as well 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 14 =====
+14 | P a g e 
+ 
+Figure: 17 
+ 
+ 
+The only sign P-148, with its two vertical line strokes appearing very closely aligned, 
+maybe a self-modification of the aforementioned vowel sign. However, it resembles the other 
+sign P-129, only with the difference of space and therefore, this form does not appear frequently 
+in usage. However, the use of the sign P -147 as a modifier with the other two primary vowel 
+signs P-127 and 341 is evident.  
+Figure: 18 
+ 
+Figure: 19 
+ 
+ 
+The supposed sign (not included as an independent sign in the Indus Sign lists) is not 
+found in a separate single form but only as a modifier in compound signs. 
+ 
+
+
+===== PAGE 15 =====
+15 | P a g e 
+ 
+Figure: 20 
+ 
+ 
+The vowel diacritical mark P-127 in the Indus Script exhibits the following allographic 
+variations, with the last one being a dual form. 
+Figure: 21 
+ 
+These three variations have been used as single independent graphemes and possess 
+distinct phonetic values in the Indus Texts. 
+Figure: 22 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 16 =====
+16 | P a g e 
+ 
+ 
+In its simple modification form, it has been mostly used at the left top of the other 
+primary signs or graphemes. 
+Figure: 23 
+ 
+However, in many cases, when applied to the primary signs or other consonantal 
+graphemes, it alters the allographic shape of the primary sign or grapheme. The first (P -127) 
+and second (M -101/W-12) variations of the two vertical short strokes have been applied 
+according to the allographic formation of the sign. Sometimes, the variation forms extend, but 
+the engraver seems to be attempting to maintain the allographic basics. 
+Figure: 24 
+ 
+
+
+===== PAGE 17 =====
+17 | P a g e 
+ 
+The third allographic variation of the sign (M-105, W-14), which consists of four short vertical 
+strokes or two equal marks, functions as a singular form that modifies the other base signs.  
+Figure: 25   
+ 
+ 
+Figure: 26 
+ 
+If we consider the concept of modification for the below-mentioned signs, it appears 
+that both singular and dual forms are in practice. 
+Figure: 27 
+ 
+
+
+===== PAGE 18 =====
+18 | P a g e 
+ 
+Then, we can perceive the same sense of modification for the third allographic variation of 
+the sign (M-105/W-14) in the same way as a dual form. 
+Figure: 28 
+ 
+ 
+ 
+Similarly, these sign variations modify the basic vowels. 
+Figure: 29 
+ 
+ 
+Among the three basic vowel signs, the third one (P-341/M-373/W-790) is also used as an 
+independent grapheme with a separate phonetic value. 
+ 
+ 
+
+
+===== PAGE 19 =====
+19 | P a g e 
+ 
+Figure: 30 
+ 
+At the same time, it modifies the other consonantal signs or graphemes. However, its 
+implementation is clear, but generally, it alters the shape of the primary signs as compound 
+signs. 
+Figure: 31 
+ 
+In Wells's sign collection, another form of modification is found. 
+Figure: 32 
+ 
+when it modifies the other basic vowel primary signs; 
+
+
+===== PAGE 20 =====
+20 | P a g e 
+ 
+ 
+its allographic forms are; 
+Figure: 33 
+ 
+The short stroke sign P -128, M -97, and W -1 exhibits minor variations in size and 
+placement within the text. It is also considered a vowel grapheme, being used independently 
+as a separate character with its own distinct phonetic value. 
+Figure: 34 
+ 
+In its simple form, this sign modifies the phonetic value of other graphemes. It is 
+predominantly used at the left top of other primary signs or graphemes, similar to the usage of 
+the sign P-127. 
+Figure: 35 
+ 
+
+
+===== PAGE 21 =====
+21 | P a g e 
+ 
+Simultaneously to the vowel sign P -127, when applied to primary signs or other 
+consonantal graphemes, it alters the allographic shape . The vertical short stroke is applied in 
+accordance with the allographic formation of the sign. 
+Figure: 36 
+ 
+ 
+ 
+ 
+Similarly, it modifies the basic vowel signs; 
+Figure: 37 
+ 
+ 
+There is no example yet of the slanted short -stroke diacritical mark being used 
+independently as a sign or grapheme in the Indus script. However, it may have a separate 
+phonetic value, it is used only as a modifier mark, consistently modifying the consonantal 
+graphemes or primary signs. 
+
+
+===== PAGE 22 =====
+22 | P a g e 
+ 
+Figure: 38 
+ 
+ 
+At the same time, it is applied to the three basic vowel signs and graphemes in the same 
+manner. 
+ 
+ 
+ 
+Figure: 39 
+ 
+ 
+ 
+
+
+===== PAGE 23 =====
+23 | P a g e 
+ 
+For additional vowel sounds, two crossed-slanted strokes are added to the primary sign 
+P-147 to create a new vowel grapheme. These vowel graphemes also modify the consonantal 
+graphemes or signs. 
+Figure: 40 
+ 
+At the same time, it is applied to the three basic vowel signs and graphemes in the same manner. 
+Figure: 41 
+ 
+Similarly, two short strokes added to the primary vowel sign P-341 create a new vowel 
+grapheme. This is the only example found of its application, following the same concept of 
+modification as the previous example. 
+Figure: 42 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 24 =====
+24 | P a g e 
+ 
+2.3 Consistency and Systematic order 
+The Indus script exhibits a remarkably systematic approach to vowel representation. 
+Basic vowel graphemes, whether used independently or combined, demonstrate consistent 
+application. This uniformity facilitates the identification of potential vowels and diphthongs. 
+Furthermore, the consistent use of these graphemes suggests a well -defined system for 
+encoding phonetic elements, crucial for deciphering the script's underlying language. 
+Figure: 43 
+ 
+Note: All these assigned numbers are from Well’s signs collection 
+Other possible variations of the vowel signs include different orientations, positions, or 
+additional diacritic marks that modify their phonetic values. 
+Figure: 44 
+ 
+ 
+ 
+
+
+===== PAGE 25 =====
+25 | P a g e 
+ 
+2.4 Indus Script Diacritics: Possible Semi-Vowels 
+Diacritics positioned on primary signs in the Indus script exhibit unique behavior 
+compared to other composite signs. They seem to act as semi-vowels, modifying the primary 
+sign's pronunciation without full integration. This suggests a distinct phonetic role, potentially 
+indicating the presence of semi-vowel sounds within the writing system. 
+Figure: 45 
+ 
+These diacritical marks have been utilized on the sides of primary signs. 
+Figure: 46 
+ 
+Mahadevan and Parpola accepted the variation of the sign P -175 as identical and 
+assigned them the same number in their respective sign lists. 
+However, after meticulous observation, it can be noted that signs P -129 and P-173, as 
+well as modifying signs in P-140, can also be categorized similar based on these variations. 
+Figure: 47 
+    
+For further clarification, let's consider an example from the texts. 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 26 =====
+26 | P a g e 
+ 
+Figure: 48 
+ 
+These allographic variations of the sign P -129 have all been used in the same manner 
+with other consonantal graphemes. 
+Figure: 49 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 27 =====
+27 | P a g e 
+ 
+Figure: 50 
+ 
+ 
+There is another semi-form of the previous sign P-129, used only on the left side of the primary 
+sign. 
+Figure: 51 
+ 
+ 
+
+
+===== PAGE 28 =====
+28 | P a g e 
+ 
+The sign P -126, which is consistently used at the left top of the primary sign, likely 
+functions as a diacritical mark. It also appears to be the semi -form of the sign P -129, with a 
+similar usage but in a different manner. 
+Figure: 52 
+ 
+ 
+There are examples of merged signs whose combining process differs from that of 
+traditional compound signs. Therefore, the sign P-319 may have a semi-vowel value. 
+Figure: 53 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 29 =====
+29 | P a g e 
+ 
+The Graphemes Adhere to Systematic and Uniform Process   
+To gain a more comprehensive understanding of primary signs and thoroughly analyze 
+their behavior, it is crucial to focus on potential vowel diacritical marks and principal modifiers. 
+These elements are commonly used in conjunction with multiple signs. While many diacritical 
+marks and the wedge symbol modifier can also be employed independently with the signs, their 
+combined usage introduces variations in allographic position and modifies the sign in distinct 
+allograph and graphic variants. 
+Likewise, the combination of two or three composite signs results in different sign 
+variants, highlighting the distinct writing styles , that emerges through their arrangement. By 
+studying these variations and combinations, we can delve deeper into the Indus writing system, 
+gaining insights into its complexity and the nuanced ways in which it can be expressed. When 
+examining the primary signs, excludin g compound signs, we observe a consistent pattern in 
+their modification, leading to the creation of new graphemes. The process of altering the 
+allography of the fundamental signs is evident, resulting in the formation of different phonemes 
+within the same class. The following section provides a detailed exploration of the variations 
+in the allographic design of the primary signs. 
+3.1 The diacritical marks create new vowel and diphthong graphemes  
+Figure: 54 
+
+===== PAGE 30 =====
+30 | P a g e 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 31 =====
+31 | P a g e 
+ 
+3.2 The Modifiers Create New Consonant Graphemes 
+Figure: 55 
+ 
+Figure: 56 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 32 =====
+32 | P a g e 
+ 
+ 
+ 
+Figure: 57 
+ 
+Figure: 58 
+ 
+ 
+The Variation and Multifarious Qualities 
+4.1 The Perception of Identical Signs: Examining Engraving Style Variation 
+This paper investigates the potential for seemingly distinct signs to represent the same 
+underlying symbol within a particular writing system. While Parpola assigns separate identity 
+numbers to the signs in question, this analysis suggests a reinterpretation. The observed 
+variations appear to be minor and attributable to stylistic choices made by the engraver. These 
+stylistic deviations may reflect the engraver's artistic expression or inherent variability within 
+the writing system itself. Further investigation into the context and frequency of these 
+variations is necessary to definitively determine if they represent dis tinct signs or stylistic 
+flourishes. 
+
+
+===== PAGE 33 =====
+33 | P a g e 
+ 
+Figure: 59 
+ 
+4.2 Rethinking Stroke Signs: Beyond Numerical Indicators 
+The prevailing view of stroke signs within the Indus writing system is that they function 
+primarily as numerical indicators, directly linked to specific values. However, this perspective 
+overlooks a crucial element: their versatility in usage. A closer examination reveals that stroke 
+signs not only participate in grapheme representation but also undergo modifications akin to 
+those observed with co re signs. This observation challenges the prevailing classification and 
+suggests that stroke signs may warrant reclassification as a type of primary sign, rather than 
+being solely confined to a numerical role. 
+Figure: 60 
+ 
+  
+ 
+  
+ 
+  
+ 
+  
+ 
+  
+ 
+  
+
+
+===== PAGE 34 =====
+34 | P a g e 
+ 
+ 
+  
+ 
+  
+ 
+4.3 Interplay of Combining Techniques and Allographic Variations 
+Figure: 61 
+ 
+ 
+4.5 Positional Variability of Primary Signs in the Indus Script 
+This analysis explores the phenomenon of positional variability  observed amongst 
+primary signs within the Indus script. Evidence suggests that the placement of these signs can 
+exhibit flexibility, potentially influenced by the engraver's artistic preferences and the available 
+writing space. Notably, this inversion does not appear to impact the phonetic value associated 
+with the sign, nor does it necessarily represent a distinct form of the primary sign itself. The 
+following examples illustrate this concept: 
+Figure: 62 
+ 
+ 
+ 
+ 
+4.6 The Paired Primary Signs  
+In M-77, 30 pairs of signs have been identified. Wells has classified all of them as 
+independent signs in his sign collection. However, only some of these pairs have been given 
+the status of independent signs in the sign collections of Mahadevan and Parpola.  
+Figure: 63 
+
+
+===== PAGE 35 =====
+35 | P a g e 
+ 
+ 
+ 
+4.7 Semi Signs  
+Two additional signs, 
+  P-120 and 
+  P-266, appear to have been derived from the basic 
+signs 
+  P-13 and 
+  P-270/W-620, respectively. These signs may represent a semi -phonetic 
+value associated with the basic signs. 
+Figure: 64 
+ 
+Classification of Primary Signs: A Foundational Approach 
+The identification of primary signs, also known as core signs, adheres to a systematic 
+methodology centered on categorization and recognition based on inherent properties. The 
+fundamental criteria for this classification lie in the formation and design of these signs 
+themselves. Attempts to decompose these signs visually into smaller, constituent parts have 
+proven to be either ineffective or impractical. Therefore, the classification and identification of 
+primary signs rely primarily on their inherent formation and design. Further decomposition 
+seems to offer diminishing returns in this context. Notably, these primary signs are frequently 
+employed in thei r most basic form, without any further segmentation. This underscores the 
+fundamental importance and integrity of these signs, akin to the basic phonemes that form the 
+building blocks of language. 
+Figure: 65 
+ 
+Serial 
+No: 
+ 
+Indus 
+Sign 
+ 
+NFM Unicode 
+PUA 
+ 
+M-1977 
+ 
+W-2015 
+ 
+P-2010 
+1.  
+  E06-D 1† 90 13 
+2.  
+  E10-A 59† 220 60 
+3.  
+  E12-D 67† 240 72 
+4.  
+  E13-D 78† 266 76 
+5.  
+  E1B-E 53† 798 88 
+6.  
+  E1E-2 162† 390 91 
+7.  
+  E24-A 176† 400 107 
+8.  
+  E26-9 400† 374 109 
+9.  
+  E2D-6 99 2 127 
+10.  
+  E2D-9 98† 1 128 
+11.  
+  E2D-C 87† 32 129 
+12.  
+  E2D-F 89† 33 130 
+
+
+===== PAGE 36 =====
+36 | P a g e 
+ 
+13.  
+  E2E-1 102† 3 130 
+14.  
+  E2F-0 109† 16 133 
+15.  
+  E31-5 121† 18 145 
+16.  
+  E31-A 86† 31 147 
+17.  
+  or 
+  E33-A or E34-F 287† or 299 900 or 899 156 or 165 
+18.  
+    
+  E37-D or E38-F 304 or 307† 890 or 892 181 or 187 
+19.  
+  E3C-2 205† 491 192 
+20.  
+  E3D-B 230† 460 198 
+21.  
+  or 
+ 
+E3E-8 or E40-9 134 or 135 480 or 482 200 or 209 
+22.  
+  E43-5 402 † 367 214 
+23.  
+  E45-D 180 † 306 217 
+24.  
+  E46-E 225 530 219 
+25.  
+  E47-D 216† 550 225 
+26.  
+  E4A-6 137† 645 245 
+27.  
+  E50-3 237 625 266 
+28.  
+  or 
+  E51-8 or E6E-E 245† or 247† 615 or 626 272 or 371 
+29.  
+  E55-0 249 590 278 
+30.  
+  or 
+  
+or 
+  
+E56-1 or E56-F 
+or E57-4 
+199 or 195 or 
+194† 
+570 or 572 
+or 576 
+282 or 285 or 
+287 
+31.  
+  E58-5 197† 575 289 
+32.  
+  E5A-D 328† 700 296 
+33.  
+  E5D-5 336† 706 302 
+34.  
+  E65-D 347† 760 319 
+35.  
+  E69-4 261† 850 341 
+36.  
+  E69-9 373† 790 341 
+37.  
+  E6E-8 391† 820 368 
+38.  
+  E6F-4 284† 877 373 
+39.  
+  E70-8 267† 817 376 
+40.  
+ 
+-- -- -- -- 
+Analysis of the Indus Script Sigil Inventory 
+A rigorous examination has been undertaken of the Indus script's sigil inventory. This 
+analysis builds upon Parpola's extensive compilation of 391 signs. Each sign underwent 
+meticulous scrutiny to discern its design principles, underlying mechanisms, and s tylistic 
+variations across writing samples. For instances requiring further clarification, in -depth 
+investigations were conducted. Additionally, the examination incorporates the updated 
+collections of signs compiled by Wells and Mahadevan, bringing the total number of analyzed 
+signs to over 404.  
+Despite potential counter-arguments concerning the deconstruction of individual signs, 
+the core proposition of the Indus script functioning as an alphabetic writing system remains 
+
+
+===== PAGE 37 =====
+37 | P a g e 
+ 
+well-supported. This exhaustive approach fosters a deeper understanding of the actual number 
+of Indus signs and their specific applications. Consequently, the notion of the Indus script as 
+an alphabet is significantly bolstered by this comprehensive analysis. 
+ 
+  
+Figure: 66 The classification of the sign collection of Parpola 
+ 
+Discussion:  
+Indus Sign Variation and Phonological Implications 
+ 
+These insights delve into the specific characteristics exhibited by Indus signs, drawing 
+upon variations observed within Indus texts. The objective is to elucidate the general 
+mechanisms and engraving practices employed in the writing system. Notably, modified or 
+compound signs often exhibit design -related inconsistencies in how they are merged. This 
+analysis prioritizes exploring how variations in engraving styles might influence the perception 
+of distinct allographs (variant forms of the same sign).s 
+To illuminate the classification, interpretation, and determination of these signs, 
+noteworthy examples are drawn from various scholarly sources, including the works of 
+Parpola, Mahadevan, and Wells. Furthermore, the investigation explores the role of diacritical 
+marks (additional markings) and principal modifiers (elements that alter the meaning of a sign) 
+and their relationship with primary signs. This analysis offers valuable insights into the writing 
+practices employed by Indus script engravers. 
+The number of 
+the Signs 
+examined 404
+Primary 
+Core Signs 
+40
+Paired Signs 
+26
+Signs with 
+Modifiers 66
+Signs with 
+Diacritics 
+125
+Ligatures or 
+Compoud 
+Signs 94
+Identical and 
+Unaddressed 
+Signs 53
+
+===== PAGE 38 =====
+38 | P a g e 
+ 
+While this study does not present individual Indus text examples to explore the nature 
+of each sign, the compiled evidence suggests that specific variations in the application of 
+diacritical marks and principal modifiers are likely attributable to the engraver's individual style 
+rather than signifying a separate sign form or distinct allograph. 
+The systematic use of these diacritics underscores the potential sophistication of the 
+Indus script's phonological system (system of sounds in a language). The presence of multiple 
+vowel signs and their intricate interactions with consonant signs suggest a  spoken language 
+that possessed a rich soundscape, potentially encompassing diphthongs (combinations of two 
+vowel sounds) and semi-vowels (sounds that function as both vowels and consonants). 
+Conclusion: 
+This study proposes a nuanced approach to deciphering the Indus script. Recognizing 
+the vast Indus Valley and limitations of communication necessitates a more lenient perspective 
+on sign design variations across the region. While the script demonstrates remarkable accuracy, 
+an insistence on extensive sign variations or rigid interpretations hinders progress. 
+Additionally, attributing the script to a specific civilization or existing writing systems creates 
+unnecessary obstacles. 
+Our analysis identifies a core set of 40 primary signs, 3 principal modifiers, and 8 
+diacritics, along with potential additional diacritics. Notably, contextual usage allows 
+equivalent consideration of certain illegible signs, depictions, and stroke symbol s. These 
+characteristics suggest an Indus system with features of both alphabetic and abugida scripts, 
+potentially influencing later archaic alphabets. 
+Further research should explore connections with other ancient scripts to decode 
+phonetic values. A standardized approach to extract phonemic characters from fundamental 
+allographs could be valuable. Given its antiquity, the Indus script may be considered the 
+foundation of all archaic alphabetic scripts. 
+Preliminary readings, based on these findings, confirm a Prakrit language within the 
+Indo-European family, potentially the source of the entire group. Comparison with archaic 
+Vedic documents offers exciting possibilities for understanding the Indus Valley civilization, 
+writing systems, and deciphering unclear texts. 
+ 

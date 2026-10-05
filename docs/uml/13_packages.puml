@@ -1,0 +1,61 @@
+@startuml
+title Figure 13 — Packages = Directories
+
+package "CNN (project root)" {
+
+  package "src.preprocessing" {
+    [image_normalization\n.ImageNormalizer]
+    [grid_decomposition\n.GridDecomposer]
+  }
+
+  package "src.models" {
+    [indus_classifier_cnn\n.IndusClassifierCNN]
+    [weight_transfer\n.WeightTransfer]
+  }
+
+  package "src (analysis)" {
+    [train\n.IndusKeeladiTrainer]
+    [evaluate\n.KeeladiEvaluator]
+    [audit_validity\n.run_audit]
+    [sign_matcher\n.match_all]
+    [siamese_embed\n.main]
+    [digitise_fig65\n.digitise]
+    [decoding\n.InscriptionDecoder]
+  }
+
+  package "presentation" {
+    [dashboard]
+    [cnn_potsherd_annotator\n.PotsherdAnnotator]
+    [cnn_annotation_generator\n.CNNAnnotationGenerator]
+    [fullscreen_resizer\n.FullscreenResizer]
+    [secret_resizer]
+    [process_model]
+    [reorganize_brahmi]
+  }
+
+  package "orchestration" {
+    [run_pipeline\n (orchestrator)]
+  }
+
+  package "notebooks" {
+    [dataset_analysis.ipynb]
+    [validation_report.ipynb]
+  }
+
+  package "docs" {
+    [ANALYSIS_ACCURACY_ROADMAP.md]
+    [ARCHITECTURE.md]
+    [UML_DIAGRAMS.md]
+    [uml/*.puml]
+  }
+
+  [run_pipeline] ..> [src.analysis] : imports
+  [src.analysis] ..> [src.preprocessing] : imports
+  [src.analysis] ..> [src.models] : imports
+  [sign_matcher] ..> [decoding] : reuse segmentation
+  [sign_matcher] ..> [audit_validity] : reuse helpers
+  [evaluate] ..> [decoding] : run_decoding()
+  [audit_validity] ..> [train] : reuses canonical_class,\nALLOGRAPH_GROUPS, ANNEXURE_REMAP
+  [presentation] ..> [src.analysis] : reads artefacts
+}
+@enduml

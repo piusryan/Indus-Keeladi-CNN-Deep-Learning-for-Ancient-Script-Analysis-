@@ -1,0 +1,78 @@
+@startuml
+title Figure 4 — Training & Evaluation Classes
+
+class IndusKeeladiTrainer {
+  - data_dir : Path
+  - model_dir : Path
+  - augment_factor : int
+  - data_augmentation : keras.Sequential
+  - classifier : IndusClassifierCNN
+  + load_training_data(augment, split_protocol) : tuple
+  + build_model(num_classes) : Model
+  + train_model(X_tr, y_tr, X_va, y_va, epochs, batch_size) : History
+  + save_trained_model(model_name) : void
+  + load_trained_model(model_name) : void
+  - _build_augmentation_pipeline() : Sequential
+  - _numpy_stochastic_degrade(img) : ndarray
+  - _augment_dataset(X, y) : tuple
+  - _safe_train_val_split(X, y, test_size) : tuple
+  - _safe_index_split(y, test_size, random_state) : tuple
+}
+
+class KeeladiEvaluator {
+  - model_path : Path
+  - data_dir : Path
+  - class_names : list
+  - normalizer : ImageNormalizer
+  - classifier : IndusClassifierCNN
+  + load_keeladi_validation_set() : dict
+  + predict_keeladi_matches(data, threshold) : dict
+  + analyze_civilization_link(predictions) : dict
+  + generate_report(predictions, analysis, out_dir) : Path
+  + run_decoding(out_dir) : Path
+  + generate_known_pair_comparison(out_dir) : Path
+  - _rejection_class_index() : int
+  - _is_negative_folder(folder) : bool
+  - _plot_match_statistics(analysis, out_dir) : void
+  - _plot_confidence_distribution(predictions, out_dir) : void
+  - _plot_graffiti_gallery(predictions, out_dir) : void
+  - _save_single_sherd_comparisons(...) : void
+}
+
+class InscriptionDecoder {
+  - data_dir : Path
+  - normalizer : ImageNormalizer
+  - classifier : IndusClassifierCNN
+  - class_names : list
+  - lexicon : dict
+  - brahmi_refs : list
+  + segment_inscription(path) : tuple
+  + decode_inscription(path) : dict
+  + decode_graffiti(img) : dict
+  + match_brahmi(glyph) : dict
+  + indus_top3(glyph) : list
+  + nlp_decode(result, corpus_key) : dict
+  + visualize_decoding(path, result, out_path) : void
+  - _load_lexicon() : dict
+  - _binarize(gray) : ndarray
+  - _crop_to_bbox(binary, x, y, w, h) : ndarray
+  - _recover_letters(mask, binary, h, w) : list
+  - _projection_split(binary, x, y, w, h) : list
+  - _load_brahmi_references() : list
+}
+
+enum SplitProtocol {
+  leakage_controlled
+  stratified
+}
+
+IndusKeeladiTrainer o-- SplitProtocol : uses
+IndusKeeladiTrainer --> ImageNormalizer
+IndusKeeladiTrainer --> IndusClassifierCNN
+KeeladiEvaluator --> ImageNormalizer
+KeeladiEvaluator --> IndusClassifierCNN
+KeeladiEvaluator ..> InscriptionDecoder : run_decoding()
+InscriptionDecoder --> ImageNormalizer
+InscriptionDecoder --> IndusClassifierCNN : optional
+InscriptionDecoder ..> lexicon : data/lexicon.json
+@enduml

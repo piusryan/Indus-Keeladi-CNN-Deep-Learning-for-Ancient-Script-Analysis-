@@ -1,0 +1,38 @@
+@startuml
+title Figure 10 — Activity: run_audit()
+
+start
+:run_audit(model_path, data_dir, out_dir, n_perm);
+:load_class_names(model_path);
+:load_classifier(model_path);
+
+partition "1. Leakage audit" {
+  :load_train_corpus()\n(mirrors src.train exactly);
+  :leakage_audit(X, y, groups, thresh=0.99);
+  partition "protocol A" {
+    :random split (test_size=0.15);
+  }
+  partition "protocol B" {
+    :source-disjoint (group) split;
+  }
+  :compute % val images with a >=0.99 twin;
+  :emit verdict (clean / contaminated);
+}
+
+partition "2. Open-set audit" {
+  :build negative groups\n(blank, saturated, noise, Brahmi letters);
+  :predict_probs(model, negatives);
+  :predict_probs(model, positives);
+  :false-acceptance rate vs positive control;
+}
+
+partition "3. Verification audit" {
+  :load the 4 curated Keeladi pairs;
+  :predict expected vs actual top-1/top-3;
+  :permutation test (n_perm=2000)\nfor better-than-chance;
+}
+
+:write_report() -> validity_audit.json + _report.txt;
+:any value that cannot be computed is written as null;
+stop
+@enduml

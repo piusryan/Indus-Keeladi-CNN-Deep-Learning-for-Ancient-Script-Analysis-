@@ -56,20 +56,54 @@ class ImageNormalizer:
     # ── New accuracy-improving preprocessing steps ─────────────────────
     def invert_if_dark_on_bright(self, gray):
         """
-        Ensure glyph is DARK (low values) on BRIGHT background (high values)?
-        Actually, we want the GLYPH to have HIGH pixel values (white-ish) on
-        LOW background so the contour detection always picks the shape.
-        We normalize towards 0 = background, 1 = glyph (convention used by
-        training synthetic images).
+        Legacy pre-crop polarity guess.  Kept for API compatibility only.
+
+        This heuristic (centre pixel vs. corner pixels) is UNRELIABLE for
+        sparse stroke glyphs: the centre of most Indus signs is *background*,
+        so a dark-glyph-on-light scan is frequently left un-inverted.  The
+        polarity decision is now made authoritatively by
+        ``_normalize_polarity``, which uses an Otsu split.  See
+        docs/ANALYSIS_ACCURACY_ROADMAP.md.
         """
-        # Take corners vs center; if center is darker than average corners,
-        # glyph is dark-on-light, invert it.
         h, w = gray.shape
         corners = [gray[0, 0], gray[0, w - 1], gray[h - 1, 0], gray[h - 1, w - 1]]
         avg_corner = float(np.mean(corners))
         center = float(gray[h // 2, w // 2])
         if center < avg_corner - 15:
             # Dark glyph on light bg -> invert
+            return 255 - gray
+        return gray
+
+    def _normalize_polarity(self, gray):
+        """
+        Force the project-wide convention: **glyph BRIGHT on dark background**.
+
+        The corpus was built from two different sources (matplotlib-rendered
+        glyphs and scanned/screenshot potsherds) and ended up with MIXED
+        polarity: some classes white-on-black, others black-on-white.  A
+        classifier trained on that mixture learns nothing transferable, which
+        is why held-out Keeladi sherd images were scored near zero.
+
+        The decision is made on the FULL image using the same
+        "foreground is the minority mode" rule that ``_autocrop_to_glyph``
+        already applies to build its component mask.  Reusing that exact rule
+        guarantees the polarity we choose agrees with the mask the autocrop
+        uses, so the glyph is bright and the background dark *consistently*,
+        before and after cropping.
+
+        This replaces an earlier centre-vs-corner heuristic, which is
+        meaningless for sparse stroke glyphs (the centre of most Indus signs
+        is background) and mis-classified a large share of the corpus.
+        """
+        if gray is None or gray.size == 0:
+            return gray
+        h, w = gray.shape[:2]
+        thr, _binary = cv2.threshold(gray, 0, 255,
+                                     cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        n_bright = int(np.count_nonzero(_binary))
+        # Bright side is the background when it occupies the majority of the
+        # frame -> invert so the (minority) glyph becomes bright.
+        if n_bright > (h * w) // 2:
             return 255 - gray
         return gray
 
@@ -212,6 +246,10 @@ class ImageNormalizer:
         gray = self.invert_if_dark_on_bright(gray)
         # Remove screenshot / scan speckle
         gray = self._denoise(gray)
+        # Authoritative polarity fix: glyph bright on dark bg.  Applied BEFORE
+        # autocrop so the component mask below is built on the same polarity we
+        # serve, and the zero-padding in _autocrop_to_glyph is true background.
+        gray = self._normalize_polarity(gray)
         # Crop to glyph contour (biggest accuracy improvement)
         gray = self._autocrop_to_glyph(gray)
         # Correct slight shear/rotation
@@ -228,6 +266,7 @@ class ImageNormalizer:
         gray = self.convert_to_grayscale(img_array_bgr_or_gray)
         gray = self.invert_if_dark_on_bright(gray)
         gray = self._denoise(gray)
+        gray = self._normalize_polarity(gray)
         gray = self._autocrop_to_glyph(gray)
         gray = self._deskew(gray)
         if apply_threshold:

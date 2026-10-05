@@ -1,0 +1,37 @@
+@startuml
+title Figure 9 — Activity: ImageNormalizer.process_image()
+
+start
+:cv2.imread(path);
+if (image is None?) then (yes)
+  :raise ValueError;
+  stop
+endif
+:convert_to_grayscale (BGR2GRAY);
+:invert_if_dark_on_bright();
+note right
+  Legacy heuristic. Unreliable for
+  sparse stroke glyphs - kept only
+  for API compatibility.
+end note
+:_denoise() morphological open/close;
+:_normalize_polarity() Otsu split;
+note right
+  Authoritative. Forces
+  glyph BRIGHT on dark background.
+end note
+:_autocrop_to_glyph();
+note right
+  Contour bounding box + square pad.
+  BIGGEST accuracy gain: the glyph
+  fills the canvas regardless of source.
+end note
+:_deskew() by image moments;
+if (apply_threshold?) then (yes)
+  :apply_threshold(threshold=127);
+endif
+:resize to target_size (64x64) INTER_AREA;
+:astype(float32) / 255.0;
+:return array in [0, 1];
+stop
+@enduml

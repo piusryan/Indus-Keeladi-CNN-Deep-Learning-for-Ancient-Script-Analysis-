@@ -1,9 +1,14 @@
 """
-CNN-Based Atan Inscription Annotator (ENHANCED - FIXED)
-Generates annotated potsherd images using reference format
-FIXES:
-- atan1, atan2, atan8 now correctly have 3 characters each (was 1)
-- Red boxes now properly per-character instead of single huge box
+Atan inscription ANNOTATOR - reference-format renderer.
+
+IMPORTANT (honesty note): the characters and "confidence" values in ATAN_DATA
+below are AUTHORED REFERENCE READINGS taken from the published Keeladi corpus
+(the scholarly attribution of each sherd), NOT outputs of the CNN. They are
+drawn on the images to show the expected reading alongside the picture. They
+must not be reported as model predictions. For real model output use
+`python run_pipeline.py` -> models/evaluation_results/keeladi_predictions.json.
+
+Generates annotated potsherd images: one red box per character.
 """
 
 import cv2

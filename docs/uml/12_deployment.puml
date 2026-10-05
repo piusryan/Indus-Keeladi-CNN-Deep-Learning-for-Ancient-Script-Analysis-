@@ -1,0 +1,49 @@
+@startuml
+title Figure 12 — Deployment (Windows workstation, CPU-only TF)
+
+node "Developer workstation\nWindows · i7-class CPU" {
+
+  node "Virtual environment\nindus_keeladi_env/ (Python 3.11)" {
+    artifact "TensorFlow 2.21 / Keras 3\nCPU only on native Windows" as TF
+    artifact "OpenCV + NumPy" as CV
+    artifact "scikit-learn" as SK
+    artifact "Matplotlib + Seaborn" as MP
+    artifact "PyMuPDF" as PMU
+  }
+
+  folder "data/processed/\ntrain · val · test" as D1
+  folder "data/lexicon.json" as D2
+  folder "data/results/logs/" as D3
+  folder "docs/*.pdf" as D4
+  folder "models/*.keras + classes.txt" as M1
+  folder "models/evaluation_results/" as M2
+  folder "docs/figures/" as D5
+
+  artifact "indus_keeladi_env\\Scripts\\python.exe" as PY
+  artifact "indus_keeladi_env\\Scripts\\streamlit.exe" as ST
+
+  PY --> TF
+  PY --> CV
+  PY --> SK
+  PY --> MP
+  PY --> PMU
+  ST --> MP
+
+  PY ..> D1 : reads
+  PY ..> D2 : reads / writes
+  PY ..> D3 : writes
+  PY ..> D4 : reads (Fig.65)
+  PY ..> M1 : reads / writes
+  PY ..> M2 : writes
+  PY ..> D5 : writes contact sheet
+  ST ..> M2 : reads
+}
+
+note bottom of TF
+  GPU is unavailable on native Windows
+  since TensorFlow 2.11. For GPU use
+  WSL2 + CUDA or tensorflow-directml-plugin.
+  Observed CPU timing: ~4 min / 20 epochs
+  at 20x augmentation.
+end note
+@enduml
