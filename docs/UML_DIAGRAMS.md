@@ -48,10 +48,10 @@ plantuml -tsvg  docs/uml/some_diagram.puml   # or SVG (best for print figures)
 @startuml
 title Figure 1 — System Context (C4 Level 1)
 
-actor Researcher as "Archaeologist /\nResearcher"
+actor Researcher as "Archaeologist / Researcher"
 actor Reviewer as Reviewer
 
-system "Indus–Keeladi CNN\n(TensorFlow 2.21 / Python 3.11)" as System
+rectangle "Indus–Keeladi CNN\n(TensorFlow 2.21 / Python 3.11)" as System
 
 database "data/processed/\n(train · val · lexicon)" as Data
 database "models/\n(.keras · classes.txt)" as Models
@@ -83,11 +83,11 @@ end note
 ## 2. Component Diagram
 
 ```plantuml
-@startuml
+﻿@startuml
 title Figure 2 — Component Diagram
 
 package "Entry points" {
-  [run_pipeline.py\nORCHESTRATOR] as RP
+  [run_pipeline.py ORCHESTRATOR] as RP
   [src/train.py] as TR
   [src/evaluate.py] as EV
   [src/audit_validity.py] as AV
@@ -125,12 +125,12 @@ RP --> AV
 RP --> EV
 RP --> SM
 RP --> PA
-RP -.writes.-> DB
+RP ..> DB : writes
 
 EV --> DEC
 SM --> DEC
-PM  ..reads..> AV
-DB  ..reads..> RP
+PM ..> AV : reads
+DB ..> RP : reads
 
 TR --> IN
 TR --> CNN
@@ -421,12 +421,12 @@ AV ..> AuditResult : produces
 title Figure 6 — Sequence: run_pipeline.main()
 
 actor User
-participant RP as run_pipeline.main()
+participant RP as "run_pipeline.main()"
 participant FS as "filesystem (PROJECT_ROOT)"
-participant AV as src.audit_validity
-participant EV as src.evaluate.KeeladiEvaluator
-participant DEC as src.decoding.InscriptionDecoder
-participant SM as src.sign_matcher
+participant AV as "src.audit_validity"
+participant EV as "src.evaluate.KeeladiEvaluator"
+participant DEC as "src.decoding.InscriptionDecoder"
+participant SM as "src.sign_matcher"
 participant PA as cnn_potsherd_annotator
 
 == Honesty gate ==
@@ -485,7 +485,7 @@ end
 title Figure 7 — Sequence: src/train.py main()
 
 actor User
-participant T as src.train.main()
+participant T as "src.train.main()"
 participant TR as IndusKeeladiTrainer
 participant IN as ImageNormalizer
 participant CNN as IndusClassifierCNN
@@ -523,7 +523,7 @@ note right of CNN
   Adam 1e-3
   EarlyStopping(patience=10, restore_best_weights)
   ReduceLROnPlateau(factor=0.5, patience=5)
-end
+end note
 
 == Save ==
 TR -> FS : models/indus_classifier.keras
@@ -810,37 +810,37 @@ title Figure 13 — Packages = Directories
 package "CNN (project root)" {
 
   package "src.preprocessing" {
-    [image_normalization\n.ImageNormalizer]
-    [grid_decomposition\n.GridDecomposer]
+    [image_normalization .ImageNormalizer]
+    [grid_decomposition .GridDecomposer]
   }
 
   package "src.models" {
-    [indus_classifier_cnn\n.IndusClassifierCNN]
-    [weight_transfer\n.WeightTransfer]
+    [indus_classifier_cnn .IndusClassifierCNN]
+    [weight_transfer .WeightTransfer]
   }
 
   package "src (analysis)" {
-    [train\n.IndusKeeladiTrainer]
-    [evaluate\n.KeeladiEvaluator]
-    [audit_validity\n.run_audit]
-    [sign_matcher\n.match_all]
-    [siamese_embed\n.main]
-    [digitise_fig65\n.digitise]
-    [decoding\n.InscriptionDecoder]
+    [train .IndusKeeladiTrainer]
+    [evaluate .KeeladiEvaluator]
+    [audit_validity .run_audit]
+    [sign_matcher .match_all]
+    [siamese_embed .main]
+    [digitise_fig65 .digitise]
+    [decoding .InscriptionDecoder]
   }
 
   package "presentation" {
     [dashboard]
-    [cnn_potsherd_annotator\n.PotsherdAnnotator]
-    [cnn_annotation_generator\n.CNNAnnotationGenerator]
-    [fullscreen_resizer\n.FullscreenResizer]
+    [cnn_potsherd_annotator .PotsherdAnnotator]
+    [cnn_annotation_generator .CNNAnnotationGenerator]
+    [fullscreen_resizer .FullscreenResizer]
     [secret_resizer]
     [process_model]
     [reorganize_brahmi]
   }
 
   package "orchestration" {
-    [run_pipeline\n (orchestrator)]
+    [run_pipeline (orchestrator)]
   }
 
   package "notebooks" {

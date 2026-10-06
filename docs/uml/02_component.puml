@@ -1,4 +1,4 @@
-@startuml
+﻿@startuml
 title Figure 2 — Component Diagram
 
 package "Entry points" {
@@ -40,12 +40,12 @@ RP --> AV
 RP --> EV
 RP --> SM
 RP --> PA
-RP -.writes.-> DB
+RP ..> DB : writes
 
 EV --> DEC
 SM --> DEC
-PM  ..reads..> AV
-DB  ..reads..> RP
+PM ..> AV : reads
+DB ..> RP : reads
 
 TR --> IN
 TR --> CNN

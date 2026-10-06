@@ -2,6 +2,9 @@
 
 > Consolidated developer reference for the Indus Valley Script ↔ Keeladi graffiti
 > deep learning pipeline (TensorFlow 2.21 / Keras 3, Python 3.11).
+>
+> Sections 1–12 are the architecture reference. Section 13 contains all 14 UML
+> diagrams as PlantUML source, each followed by its rendered image.
 
 | Document | Purpose |
 |---|---|
@@ -9,6 +12,7 @@
 | [`docs/ANALYSIS_ACCURACY_ROADMAP.md`](docs/ANALYSIS_ACCURACY_ROADMAP.md) | Research analysis, failure taxonomy, accuracy roadmap |
 | [`README.md`](README.md) | Quick-start and how-to-run guide |
 | [`docs/uml/`](docs/uml/) | Standalone `.puml` sources, one file per diagram |
+| [`docs/uml/images/`](docs/uml/images/) | Rendered diagram images (PNG) |
 
 ---
 
@@ -701,10 +705,10 @@ Source PDFs are in `docs/`, with `*.extracted.txt` text extracts alongside.
 @startuml
 title Figure 1 — System Context (C4 Level 1)
 
-actor Researcher as "Archaeologist /\nResearcher"
+actor Researcher as "Archaeologist / Researcher"
 actor Reviewer as Reviewer
 
-system "Indus–Keeladi CNN\n(TensorFlow 2.21 / Python 3.11)" as System
+rectangle "Indus–Keeladi CNN\n(TensorFlow 2.21 / Python 3.11)" as System
 
 database "data/processed/\n(train · val · lexicon)" as Data
 database "models/\n(.keras · classes.txt)" as Models
@@ -731,16 +735,20 @@ end note
 @enduml
 ```
 
+<img src="docs/uml/images/01_system_context.png" alt="Figure 1" width="100%">
+
+*Source: [`docs/uml/01_system_context.puml`](docs/uml/01_system_context.puml)*
+
 ---
 
 ### 13.2 Component Diagram
 
 ```plantuml
-@startuml
+﻿@startuml
 title Figure 2 — Component Diagram
 
 package "Entry points" {
-  [run_pipeline.py\nORCHESTRATOR] as RP
+  [run_pipeline.py ORCHESTRATOR] as RP
   [src/train.py] as TR
   [src/evaluate.py] as EV
   [src/audit_validity.py] as AV
@@ -778,12 +786,12 @@ RP --> AV
 RP --> EV
 RP --> SM
 RP --> PA
-RP -.writes.-> DB
+RP ..> DB : writes
 
 EV --> DEC
 SM --> DEC
-PM  ..reads..> AV
-DB  ..reads..> RP
+PM ..> AV : reads
+DB ..> RP : reads
 
 TR --> IN
 TR --> CNN
@@ -821,6 +829,10 @@ DB --> SLT
 PA --> CV
 @enduml
 ```
+
+<img src="docs/uml/images/02_component.png" alt="Figure 2" width="100%">
+
+*Source: [`docs/uml/02_component.puml`](docs/uml/02_component.puml)*
 ---
 
 ### 13.3 Class Diagram — Preprocessing & Model
@@ -898,6 +910,10 @@ GridDecomposer ..> NG : decomposes (not wired to CNN)
 WeightTransfer ..> IndusClassifierCNN : copies Conv2D weights
 @enduml
 ```
+
+<img src="docs/uml/images/03_class_preprocessing_model.png" alt="Figure 3" width="100%">
+
+*Source: [`docs/uml/03_class_preprocessing_model.puml`](docs/uml/03_class_preprocessing_model.puml)*
 
 ---
 
@@ -984,6 +1000,10 @@ InscriptionDecoder ..> lexicon : data/lexicon.json
 @enduml
 ```
 
+<img src="docs/uml/images/04_class_training_evaluation.png" alt="Figure 4" width="100%">
+
+*Source: [`docs/uml/04_class_training_evaluation.puml`](docs/uml/04_class_training_evaluation.puml)*
+
 ### 13.5 Class Diagram — Audit & Matching
 
 ```plantuml
@@ -1065,6 +1085,10 @@ AV ..> AuditResult : produces
 @enduml
 ```
 
+<img src="docs/uml/images/05_class_audit_matching.png" alt="Figure 5" width="100%">
+
+*Source: [`docs/uml/05_class_audit_matching.puml`](docs/uml/05_class_audit_matching.puml)*
+
 ---
 
 ### 13.6 Sequence — Full Pipeline
@@ -1074,12 +1098,12 @@ AV ..> AuditResult : produces
 title Figure 6 — Sequence: run_pipeline.main()
 
 actor User
-participant RP as run_pipeline.main()
+participant RP as "run_pipeline.main()"
 participant FS as "filesystem (PROJECT_ROOT)"
-participant AV as src.audit_validity
-participant EV as src.evaluate.KeeladiEvaluator
-participant DEC as src.decoding.InscriptionDecoder
-participant SM as src.sign_matcher
+participant AV as "src.audit_validity"
+participant EV as "src.evaluate.KeeladiEvaluator"
+participant DEC as "src.decoding.InscriptionDecoder"
+participant SM as "src.sign_matcher"
 participant PA as cnn_potsherd_annotator
 
 == Honesty gate ==
@@ -1129,6 +1153,10 @@ EV --> RP : (predictions, analysis)
 end
 @enduml
 ```
+
+<img src="docs/uml/images/06_sequence_pipeline.png" alt="Figure 6" width="100%">
+
+*Source: [`docs/uml/06_sequence_pipeline.puml`](docs/uml/06_sequence_pipeline.puml)*
 ---
 
 ### 13.7 Sequence — Training
@@ -1138,7 +1166,7 @@ end
 title Figure 7 — Sequence: src/train.py main()
 
 actor User
-participant T as src.train.main()
+participant T as "src.train.main()"
 participant TR as IndusKeeladiTrainer
 participant IN as ImageNormalizer
 participant CNN as IndusClassifierCNN
@@ -1176,7 +1204,7 @@ note right of CNN
   Adam 1e-3
   EarlyStopping(patience=10, restore_best_weights)
   ReduceLROnPlateau(factor=0.5, patience=5)
-end
+end note
 
 == Save ==
 TR -> FS : models/indus_classifier.keras
@@ -1184,6 +1212,10 @@ TR -> FS : models/indus_classifier_classes.txt
 TR --> User : "TRAINING PIPELINE COMPLETED SUCCESSFULLY"
 @enduml
 ```
+
+<img src="docs/uml/images/07_sequence_training.png" alt="Figure 7" width="100%">
+
+*Source: [`docs/uml/07_sequence_training.puml`](docs/uml/07_sequence_training.puml)*
 
 ---
 
@@ -1233,6 +1265,10 @@ EV --> User : report path + summary
 @enduml
 ```
 
+<img src="docs/uml/images/08_sequence_evaluation.png" alt="Figure 8" width="100%">
+
+*Source: [`docs/uml/08_sequence_evaluation.puml`](docs/uml/08_sequence_evaluation.puml)*
+
 ---
 
 ### 13.9 Activity — Preprocessing
@@ -1276,6 +1312,10 @@ endif
 stop
 @enduml
 ```
+
+<img src="docs/uml/images/09_activity_preprocessing.png" alt="Figure 9" width="100%">
+
+*Source: [`docs/uml/09_activity_preprocessing.puml`](docs/uml/09_activity_preprocessing.puml)*
 
 ---
 
@@ -1321,6 +1361,10 @@ partition "3. Verification audit" {
 stop
 @enduml
 ```
+
+<img src="docs/uml/images/10_activity_audit.png" alt="Figure 10" width="100%">
+
+*Source: [`docs/uml/10_activity_audit.puml`](docs/uml/10_activity_audit.puml)*
 ---
 
 ### 13.11 State — Model Lifecycle
@@ -1398,6 +1442,10 @@ Evaluating --> Rejected : top-1 == zz_*
 @enduml
 ```
 
+<img src="docs/uml/images/11_state_model_lifecycle.png" alt="Figure 11" width="100%">
+
+*Source: [`docs/uml/11_state_model_lifecycle.puml`](docs/uml/11_state_model_lifecycle.puml)*
+
 ---
 
 ### 13.12 Deployment Diagram
@@ -1454,6 +1502,10 @@ end note
 @enduml
 ```
 
+<img src="docs/uml/images/12_deployment.png" alt="Figure 12" width="100%">
+
+*Source: [`docs/uml/12_deployment.puml`](docs/uml/12_deployment.puml)*
+
 ### 13.13 Package / Namespace Diagram
 
 ```plantuml
@@ -1463,37 +1515,37 @@ title Figure 13 — Packages = Directories
 package "CNN (project root)" {
 
   package "src.preprocessing" {
-    [image_normalization\n.ImageNormalizer]
-    [grid_decomposition\n.GridDecomposer]
+    [image_normalization .ImageNormalizer]
+    [grid_decomposition .GridDecomposer]
   }
 
   package "src.models" {
-    [indus_classifier_cnn\n.IndusClassifierCNN]
-    [weight_transfer\n.WeightTransfer]
+    [indus_classifier_cnn .IndusClassifierCNN]
+    [weight_transfer .WeightTransfer]
   }
 
   package "src (analysis)" {
-    [train\n.IndusKeeladiTrainer]
-    [evaluate\n.KeeladiEvaluator]
-    [audit_validity\n.run_audit]
-    [sign_matcher\n.match_all]
-    [siamese_embed\n.main]
-    [digitise_fig65\n.digitise]
-    [decoding\n.InscriptionDecoder]
+    [train .IndusKeeladiTrainer]
+    [evaluate .KeeladiEvaluator]
+    [audit_validity .run_audit]
+    [sign_matcher .match_all]
+    [siamese_embed .main]
+    [digitise_fig65 .digitise]
+    [decoding .InscriptionDecoder]
   }
 
   package "presentation" {
     [dashboard]
-    [cnn_potsherd_annotator\n.PotsherdAnnotator]
-    [cnn_annotation_generator\n.CNNAnnotationGenerator]
-    [fullscreen_resizer\n.FullscreenResizer]
+    [cnn_potsherd_annotator .PotsherdAnnotator]
+    [cnn_annotation_generator .CNNAnnotationGenerator]
+    [fullscreen_resizer .FullscreenResizer]
     [secret_resizer]
     [process_model]
     [reorganize_brahmi]
   }
 
   package "orchestration" {
-    [run_pipeline\n (orchestrator)]
+    [run_pipeline (orchestrator)]
   }
 
   package "notebooks" {
@@ -1519,6 +1571,10 @@ package "CNN (project root)" {
 }
 @enduml
 ```
+
+<img src="docs/uml/images/13_packages.png" alt="Figure 13" width="100%">
+
+*Source: [`docs/uml/13_packages.puml`](docs/uml/13_packages.puml)*
 
 ---
 
@@ -1578,6 +1634,10 @@ UC6 ..> UC4 : <<requires>> segmentation
 UC15 ..> UC2 : <<extends>>
 @enduml
 ```
+
+<img src="docs/uml/images/14_use_case.png" alt="Figure 14" width="100%">
+
+*Source: [`docs/uml/14_use_case.puml`](docs/uml/14_use_case.puml)*
 
 ---
 

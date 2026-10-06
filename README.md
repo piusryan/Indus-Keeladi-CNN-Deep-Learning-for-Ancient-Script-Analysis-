@@ -15,9 +15,12 @@ The project implements the research gaps identified in `conversation.txt`:
 
 | Document | What it covers |
 |---|---|
+| **[PRESENTATION.md](PRESENTATION.md)** | **8-slide talk outline** — title, problem statement, dataset, methodology, open-set gap, results, limitations, conclusions (includes speaker notes) |
+| **[DOCUMENTATION.md](DOCUMENTATION.md)** | Architecture reference + all 14 UML diagrams, source and rendered |
 | **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Developer reference — purpose, tech stack, repository layout, data model, full module reference with every public method, execution flows, configuration constants, extension guide, design invariants, and known limitations |
 | **[docs/UML_DIAGRAMS.md](docs/UML_DIAGRAMS.md)** | 14 PlantUML diagrams (system context, component, class, sequence, activity, state, deployment, package, use case) with render instructions |
 | **[docs/uml/](docs/uml/)** | The same diagrams as standalone `.puml` files, ready to render in batch |
+| **[docs/uml/images/](docs/uml/images/)** | Rendered diagram images (PNG) |
 | **[docs/ANALYSIS_ACCURACY_ROADMAP.md](docs/ANALYSIS_ACCURACY_ROADMAP.md)** | Research analysis, failure taxonomy, and the accuracy roadmap |
 | **[notebooks/](notebooks/)** | `dataset_analysis.ipynb`, `validation_report.ipynb` — EDA and publication plots |
 
